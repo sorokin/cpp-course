@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>С++, группы x536, x537, x538, x539</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:sans-serif; font-size: 10pt;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h2>С++, группы x536, x537, x538, x539</h2>
+    <h3>Лекции</h3>
+    <h4>Лекция 1<sup id="cite_ref_1a"><a href="#cite_note_1">[1]</a></sup></h4>
+        <ul>
+          <li>i8086</li>
+          <li>регистры общего назначения, регистр IP</li>
+          <li>распространенные арифметические операции: add, sub, [i]mul, [i]div, and, or, xor, shl, shr, sar</li>
+          <li>команды безусловных переходов</li>
+          <li>регистр флагов и некоторые биты в нём (ZF, CF, OF, SF)</li>
+          <li>команды условных переходов</li>
+          <li>команды cmp и test</li>
+          <li>i80386, 32-битные регистры</li>
+        </ul>
+    <h4>Лекция 2<sup id="cite_ref_1b"><a href="#cite_note_1">[1]</a></sup></h4>
+        <ul>
+          <li>(offtopic) деление на константу не используя, команду div<sup id="cite_ref_2"><a href="#cite_note_2">[2]</a></sup></li>
+          <li>регистр SP и команды для работы со стеком (push, pop)</li>
+          <li>команды call и ret</li>
+          <li>регистр BP, стековый фрейм</li>
+          <li>соглашения вызова функций<sup id="cite_ref_9"><a href="#cite_note_9">[9]</a></sup></li>
+        </ul>
+    <h4>Лекция 3<sup id="cite_ref_1c"><a href="#cite_note_1">[1]</a></sup></h4>
+        <ul>
+          <li>прерывания</li>
+          <li>вытесняющая многозадачность</li>
+          <li>защищенный режим, страничная адресация</li>
+        </ul>
+    <h4>Лекция 4<sup id="cite_ref_3"><a href="#cite_note_3">[3]</a></sup></h4>
+        <ul>
+          <li>кеш-память<sup id="cite_ref_4"><a href="#cite_note_4">[4]</a></sup><sup id="cite_ref_5"><a href="#cite_note_5">[5]</a></sup><sup id="cite_ref_6"><a href="#cite_note_6">[6]</a></sup></li>
+          <li>спекулятивное исполнение команд</li>
+          <li>branch prediction</li> 
+        </ul>
+    <h4>Лекция 5<sup id="cite_ref_7"><a href="#cite_note_7">[7]</a></sup></h4>
+        <ul>
+          <li>пересечение языков C и C++</li>
+          <li>целочисленные типы, ABI</li>
+          <li>числа с плавающие точкой<sup id="cite_ref_8"><a href="#cite_note_8">[8]</a></sup></li>
+        </ul>
+    <h4>Лекция 6<sup id="cite_ref_7"><a href="#cite_note_7">[7]</a></sup></h4>
+        <ul>
+          <li>указатели</li>
+          <li>операции взятия адреса и разыменования</li>
+          <li>массивы, неявное приведение к указателю</li>
+          <li>операции инкремента, декремента, сложения с числом, вычитание числа и разности указателей</li>
+          <li>синтаксис указателей и массивов в общем случае, использование скобок для указания приоритета операций</li>
+          <li>указатели на функцию</li>
+        </ul>
+    <h4>Лекция 7, 8</h4>
+        <ul>
+          <li>процесс компиляции программ</li>
+          <li>объектные файлы</li>
+          <li>трансляция, единица трансляция</li>
+          <li>линковка</li>
+          <li>объявления и определения для переменных и для функций</li>
+          <li>модификатор static</li>
+          <li>препроцессор, примеры директив</li>
+          <li>header-файлы</li>
+          <li>include guard</li>
+        </ul>
+    <h3>Домашние задания</h3>
+    <ol>
+      <li><a href="task-1.html">Задание 1</a></li>
+    </ol>
+    <h3>Ссылки</h3>
+    <ol>
+      <li id="cite_note_1"><b><a href="#cite_ref_1a">^</a><a href="#cite_ref_1b">^</a><a href="#cite_ref_1c">^</a></b> С. В. Зубков &mdash; Assembler для DOS, Windows, UNIX</li>
+      <li id="cite_note_2"><b><a href="#cite_ref_2">^</a></b> Henry S. Warren, Jr. &mdash; Hacker's Delight</li>
+      <li id="cite_note_3"><b><a href="#cite_ref_3">^</a></b> John P. Shen, Mikko H. Lipasti &mdash; Modern Processor Design: Fundamentals of Superscalar Processors</li>
+      <li id="cite_note_4"><b><a href="#cite_ref_4">^</a></b> <a href="http://people.redhat.com/drepper/cpumemory.pdf">Ulrich Drepper &mdash; What Every Programmer Should Know About Memory</a></li>
+      <li id="cite_note_5"><b><a href="#cite_ref_5">^</a></b> <a href="http://research.scee.net/files/presentations/gcapaustralia09/Pitfalls_of_Object_Oriented_Programming_GCAP_09.pdf">Tony Albrecht &mdash; Pitfalls of Object Oriented Programming</a></li>
+      <li id="cite_note_6"><b><a href="#cite_ref_6">^</a></b> <a href="http://www.rdrop.com/users/paulmck/scalability/paper/whymb.2010.06.07c.pdf">Paul E. McKenney &mdash; Memory Barriers: A Hardware View for Software Hackers</a></li>
+      <li id="cite_note_7"><b><a href="#cite_ref_7">^</a></b> Brian W. Kernighan, Dennis M. Ritchie &mdash; The C Programming Language</li>
+      <li id="cite_note_8"><b><a href="#cite_ref_8">^</a></b> <a href="http://perso.ens-lyon.fr/jean-michel.muller/goldberg.pdf">David Goldberg &mdash; What Every Computer Scientist Should Know About Floating-Point Arithmetic</a></li>
+      <li id="cite_note_9"><b><a href="#cite_ref_9">^</a></b> <a href="http://www.agner.org/optimize/calling_conventions.pdf">Agner Fog &mdash; Calling conventions for different C++ compilers and operating systems</a></li>
+    </ol>
+<!--
+    <h3>Список литературы</h3>
+    <ul>
+      <li>
+        Low-level
+        <ul>
+          <li><a href="http://www.openrce.org/articles/files/jangrayhood.pdf">Jan Grey &mdash; C++: Under the Hood</a></li>
+          <li><a href="http://www.int0x80.gr/papers/name_mangling.pdf">Name mangling demystified</a></li>
+        </ul>
+      </li>
+      <li>
+        Basic
+        <ul>
+          <li>Brian Kernighan, Dennis Ritchie &mdash; The C Programming Language</li>
+          <li>Andrew Koenig, Barbara Moo &mdash; Accelerated C++</li>
+          <li>Bjarne Stroustrup &mdash; Programming: Principles and Practice using C++</li>
+        </ul>
+      </li>
+      <li>
+        In-Depth
+        <ul>
+          <li>Herb Sutter, Andrei Alexandrescu &mdash; C++ Coding Standards: 101 Rules, Guidelines, and Best Practices</li>
+          <li>Herb Sutter &mdash; Exceptional C++</li>
+          <li>Herb Sutter &mdash; More Exceptional C++</li>
+          <li>Andrei Alexandrescu &mdash; Modern C++ Design</li>
+          <li>Scott Mayers &mdash; Effective C++</li>
+          <li>Scott Mayers &mdash; More Effective C++</li>
+          <li>Scott Mayers &mdash; Effective STL</li>
+          <li>Stephen Dewhurst &mdash; C++ Common Knowledge: Essential Intermediate Programming</li>
+          <li>Stephen Dewhurst &mdash; C++ Gotchas</li>
+          <li>Bjarne Stroustrup &mdash; The C++ Programming Language</li>
+          <li><a href="https://github.com/boostcon/2010_presentations/blob/master/thu/type_erasure_pattern_boostcon.pdf?raw=true">Nevin Liber &mdash; Type Erasure Pattern</a></li>
+        </ul>
+      </li>
+      <li>
+        Alexander Stepanov
+        <ul>
+          <li><a href="http://www.stepanovpapers.com/notes.pdf">Alexander Stepanov &mdash; Notes on Programming</a></li>
+          <li>Alexander Stepanov, Paul McJones &mdash; Elements of Programming</li>
+          <li>Alexander Stepanov &mdash; Наибольшая общая мера последние 2500 лет, лекция в Яндексе
+          <ul><li><a href="http://video.yandex.ru/users/ya-events/view/129/">Часть №1</a></li>
+          <li><a href="http://video.yandex.ru/users/ya-events/view/128/">Часть №2</a></li></ul></li>
+          <li><a href="http://www.stepanovpapers.com/history%20of%20STL.pdf">Alexander Stepanov &mdash; Short History of STL</a></li>
+        </ul>
+      </li>
+      <li>
+        Stephan T. Lavavej &mdash; STL (C9 Lectures)
+        <ul>
+          <li><a href="http://channel9.msdn.com/shows/Going+Deep/C9-Lectures-Introduction-to-STL-with-Stephan-T-Lavavej/">Part 1</a> (sequence containers)</li>
+          <li><a href="http://channel9.msdn.com/shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-2-of-n/">Part 2</a> (associative containers)</li>
+          <li><a href="http://channel9.msdn.com/shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-3-of-n/">Part 3</a> (smart pointers)</li>
+          <li><a href="http://channel9.msdn.com/shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-4-of-n/">Part 4</a> (Nurikabe solver)</li>
+          <li><a href="http://channel9.msdn.com/shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-5-of-n/">Part 5</a> (Nurikabe solver, continued)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-6-of-n">Part 6</a> (algorithms and functors)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-7-of-n">Part 7</a> (algorithms and functors, continued)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-8-of-n">Part 8</a> (regular expressions)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-9-of-n">Part 9</a> (rvalue references)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Standard-Template-Library-STL-10-of-10">Part 10</a> (type traits)</li>
+        </ul>
+      </li>
+      <li>
+        Stephan T. Lavavej &mdash; Advanced STL (C9 Lectures)
+        <ul>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Advanced-STL-1-of-n">Part 1</a> (Deep shared_ptr and friends)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Advanced-STL-2-of-n">Part 2</a> (Algorithm optimization)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Advanced-STL-3-of-n">Part 3</a> (STL's comprehensive correctness checks)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Advanced-STL-4-of-n">Part 4</a> (rvalue references, perfect forwarding, associative containers)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Advanced-STL-5-of-n">Part 5</a> (Boost Library)</li>
+          <li><a href="http://channel9.msdn.com/Shows/Going+Deep/C9-Lectures-Stephan-T-Lavavej-Advanced-STL-6-of-n">Part 6</a> (Container pretty printer)</li>
+        </ul>
+      </li>
+      <li>
+        GoingNative 2012
+        <ul>
+          <li><a href="http://channel9.msdn.com/Events/GoingNative/GoingNative-2012/STL11-Magic-Secrets">Stephan T. Lavavej &mdash; STL11: Magic &amp;&amp; Secrets</a></li>
+          <li><a href="http://channel9.msdn.com/Events/GoingNative/GoingNative-2012/C-11-VC-11-and-Beyond">Herb Sutter &mdash; C++11, VC++11 and Beyond</a></li>
+          <li><a href="http://channel9.msdn.com/Events/GoingNative/GoingNative-2012/Variadic-Templates-are-Funadic">Andrei Alexandrescu &mdash; Variadic Templates are Funadic</a></li>
+          <li><a href="http://channel9.msdn.com/Events/GoingNative/GoingNative-2012/Static-If-I-Had-a-Hammer">Andrei Alexandrescu &mdash; Static If I Had a Hammer</a></li>
+        </ul>
+      </li>
+      <li>
+        Stephan T. Lavavej &mdash; Core C++
+        <ul>
+          <li><a href="http://channel9.msdn.com/Series/C9-Lectures-Stephan-T-Lavavej-Core-C-/Stephan-T-Lavavej-Core-C-1-of-n">Part 1</a> (Name Lookup)</li>
+          <li><a href="http://channel9.msdn.com/Series/C9-Lectures-Stephan-T-Lavavej-Core-C-/Stephan-T-Lavavej-Core-C-2-of-n">Part 2</a> (Template argument deduction)</li>
+        </ul>
+      </li>
+      <li>
+        Concurrency
+        <ul>
+          <li>Anthony Williams &mdash; C++ Concurrency in Action: Practical Multithreading</li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-1-starting-threads.html">Multithreading in C++0x Part 1</a> (Starting Threads)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-2-function-objects-and-arguments.html">Multithreading in C++0x Part 2</a> (Starting Threads with Function Objects and Arguments)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-3.html">Multithreading in C++0x Part 3</a> (Starting Threads with Member Functions and Reference Arguments)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-4-protecting-shared-data.html">Multithreading in C++0x Part 4</a> (Protecting Shared Data)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-5-flexible-locking.html">Multithreading in C++0x Part 5</a> (Flexible locking with std::unique_lock&lt;&gt;)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-6-double-checked-locking.html">Multithreading in C++0x Part 6</a> (Lazy initialization and double-checked locking with atomics)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-7-locking-multiple-mutexes.html">Multithreading in C++0x Part 7</a> (Locking multiple mutexes without deadlock)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/multithreading-in-c++0x-part-8-futures-and-promises.html">Multithreading in C++0x Part 8</a> (Futures, Promises and Asynchronous Function Calls)</a></li>
+          <li><a href="http://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html">Implementing a Thread-Safe Queue using Condition Variables</a></li>
+        </ul>
+      </li>
+      <li>
+        Rationale
+        <ul>
+          <li>Bjarne Stroustrup &mdash; The Design and Evolution of C++</li>
+          <li><a href="http://www2.research.att.com/~bs/hopl-almost-final.pdf">Bjarne Stroustrup &mdash; Evolving a language in and for the real world: C++ 1991-2006</a></li>
+          <li><a href="http://www.open-std.org/jtc1/sc22/wg14/www/C99RationaleV5.10.pdf">Rationale for Programming Language C</a></li>
+        </ul>
+      </li>
+    </ul>
+-->
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer">
+        <img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+      </a>
+    </p>
+  </body>
+</html>
