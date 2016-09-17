@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Bimap</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #e0e0e0;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h2>Bimap</h2>
+    <p><i>(задание к пересдаче зачета 24.09.2016)</i></p>
+    <h3>Введение</h3>
+    <p>В данном задании необходимо написать <a href="https://en.wikipedia.org/wiki/Bidirectional_map">bimap</a> (<i>bidirectional map</i>).</p>
+    <p><a href="http://en.cppreference.com/w/cpp/container/map">map</a>-ами называются такие структуры данных, которые хранят набор пар, и позволяют эффективно по первому элементу пары (который называется ключом) находить соответствующий ему второй элемент пары (называется значением). Существует две распространенные реализаций map-ов: деревья поиска и хеш-таблицы. Далее в этом задании я буду предполагать, что map устроен как бинарное дерево поиска.</p>
+    <p>Также как и map-ы, bimap-ы хранят набор пар и позволяют эффективно по первому элементу пары находить второй, а по второму &mdash; первый. То есть поиск можно делать в обе стороны. Первый элемент пары я буду называть left, второй &mdash; right.</p>
+    <p>Наивная реализация bimap-а, могла бы состоять из двух map-ов: прямой и обратной. Прямая использовалась бы для поиска из left в right, а обратная &mdash; из right в left. Такая реализация не является эффективной, так как в ней на каждую пару хранимую в bimap аллоцируется два объекта в хипе. Можно сделать эффективнее, если завести класс node следущего вида:</p>
+    <div class="codeblock"><pre>struct node
+{
+    left_t  left_data;
+    node*   left_left;
+    node*   left_right;
+    node*   left_parent;
+
+    right_t right_data;
+    node*   right_left;
+    node*   right_right;
+    node*   right_parent;
+};</pre></div>
+    <p>В приведенном классе left_data и right_data являются значениями левого и правого элемента пары соответственно. left_{left,right,parent} образуют бинарное дерево поиска, в котором left_data является ключом. right_{left,right,parent} образуют бинарное дерево поиска, в котором right_data является ключом. То есть node-ы провязаны в два независимых дерева поиска.</p>
+    <p>Обычное бинарное дерево поиска позволяется находить следующий по величине элемент и предыдущий по величине элемент. Такая структура node-ов как в bimap позволяет находить node со следующим по величине left, следующим по величине right, предыдущим по величине left, предыдущим по величине right.</p>
+    <p>В std::map итераторы поддерживают две операции: перейти к следующему элементу по величине и перейди к предыдущему. begin() возвращает итератор на минимальный элемент, end() &mdash; на следующий за максимальным. Таким образом цикл от begin() до end() позволяет просмотреть все элементы std::map в порядке возрастания.</p>
+    <p>В bimap итераторы можно сделать следующим способом. Существует два вида итераторов: left_iterator и right_iterator. Проход от begin_left() до end_left() позволяет просмотреть все левые элементы пар в возрастающем порядке. Проход от begin_right() до end_right() все правые элементы пар в возрастающем порядке. Оба вида итераторов имеют функцию flip(), которая возвращает итератор другого вида, но ссылающийся на эту же пару.</p>
+    <h3>Задание</h3>
+    <p>В этом задании необходимо реализовать класс со следующим интерфейсом:</p>
+    <div class="codeblock"><pre>struct bimap
+{
+    // Вы можете определить эти тайпдефы по вашему усмотрению.
+    typedef ... left_t;
+    typedef ... right_t;
+
+    struct left_iterator;
+    struct right_iterator;
+
+    // Вставка пары (left, right), возвращает итератор на left.
+    left_iterator insert(left_t const&amp; left, right_t const&amp; right);
+    
+    // Удаляет элемент и соответствующий ему парный.
+    void erase(left_iterator);
+    void erase(right_iterator);
+
+    // Возвращает итератор по элементу. В случае если элемент не найден возвращает
+    // end_left()/end_right() соответственно.
+    left_iterator  find_left (left_t  const&amp; left)  const;
+    right_iterator find_right(right_t const&amp; right) const;
+
+    // Возващает итератор на минимальный по величине left
+    left_iterator begin_left() const;
+    // Возващает итератор на следующий за последним по величине left
+    left_iterator end_left() const;
+
+    // Возващает итератор на минимальный по величине right
+    right_iterator begin_right() const;
+    // Возващает итератор на следующий за последним по величине right
+    right_iterator end_right() const;
+};
+
+struct bimap::left_iterator
+{
+    // Элемент на который сейчас ссылается итератор, если такой существует.
+    left_t const&amp; operator*() const;
+
+    // Переход к следующему по величине left'у, если такой существует.
+    left_iterator&amp; operator++();
+    left_iterator operator++(int);
+
+    // Переход к предыдущему по величине left'у, если такой существует.
+    left_iterator&amp; operator--();
+    left_iterator operator--(int);
+    
+    // left_iterator ссылается на левый элемент некоторой пары.
+    // Эта функция возвращает итератор на правый элемент той же пары.
+    // end_left().flip() возращает end_right()
+    // end_right().flip() возвращает end_left()
+    right_iterator flip() const;
+};
+
+struct bimap::right_iterator
+{
+    // Здесь всё аналогично left_iterator.
+    right_t const&amp; operator*() const;
+
+    right_iterator&amp; operator++();
+    right_iterator operator++(int);
+
+    right_iterator&amp; operator--();
+    right_iterator operator--(int);
+    
+    left_iterator flip() const;
+};</pre></div>
+    <p>bimap хранит набор пар (left, right). begin_left()/end_left() позволяет пройти все левые элементы пар в порядке возрастания. begin_right()/end_right() позволяет пройти все правые элементы пар в порядке возрастания. Функция итератора flip() позволяет стоя на левом элементе какой-то пары перейти к правому и наоборот.</p>
+    <p>Необходимо, чтобы bimap создавал один объект в памяти на каждую пару хранящуюся в нем.</p>
+    <p>Необходимо, чтобы bimap использовал внутри себя дерево поиска (не обязательно сбалансированное), а операции поиска/вставки/удаления работали за O(h), где h &mdash; высота дерева.</p>
+    <p></p>
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer">
+        <img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+      </a>
+    </p>
+  </body>
+</html>
