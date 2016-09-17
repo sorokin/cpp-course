@@ -64,14 +64,19 @@
     struct left_iterator;
     struct right_iterator;
 
+    // Создает bimap не содержащий ни одной пары.
+    bimap();
+
     // Вставка пары (left, right), возвращает итератор на left.
+    // Если такой left или такой right уже присутствуют в bimap, вставка не
+    // производиться и возвращается end_left().
     left_iterator insert(left_t const&amp; left, right_t const&amp; right);
-    
+
     // Удаляет элемент и соответствующий ему парный.
     void erase(left_iterator);
     void erase(right_iterator);
 
-    // Возвращает итератор по элементу. В случае если элемент не найден возвращает
+    // Возвращает итератор по элементу. В случае если элемент не найден, возвращает
     // end_left()/end_right() соответственно.
     left_iterator  find_left (left_t  const&amp; left)  const;
     right_iterator find_right(right_t const&amp; right) const;
@@ -123,6 +128,7 @@ struct bimap::right_iterator
     <p>bimap хранит набор пар (left, right). begin_left()/end_left() позволяет пройти все левые элементы пар в порядке возрастания. begin_right()/end_right() позволяет пройти все правые элементы пар в порядке возрастания. Функция итератора flip() позволяет стоя на левом элементе какой-то пары перейти к правому и наоборот.</p>
     <p>Необходимо, чтобы bimap создавал один объект в памяти на каждую пару хранящуюся в нем.</p>
     <p>Необходимо, чтобы bimap использовал внутри себя дерево поиска (не обязательно сбалансированное), а операции поиска/вставки/удаления работали за O(h), где h &mdash; высота дерева.</p>
+    <p>Конструкторы копирования и оператор присваивания bimap-а должны быть запрещены.</p>
     <p></p>
     <p>
       <a href="http://validator.w3.org/check?uri=referer">
