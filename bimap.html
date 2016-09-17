@@ -6,14 +6,31 @@
     <style type="text/css">
       .codeblock
       {
-        background: #e0e0e0;
+        background: #ffffff;
         border: solid 1px black;
         padding: 5px;
         font-family: monospace;
+        white-space:pre;
       }
       .codein
       {
         font-family: monospace;
+      }
+      .keyword
+      {
+        color: #2020ff;
+      }
+      .type
+      {
+        color: #008080;
+      }
+      .var
+      {
+        color: #790000;
+      }
+      .comment
+      {
+        color: #006500;
       }
     td.numbers {text-align: right;}
     td.names {text-align: left;}
@@ -37,109 +54,109 @@
     <p><a href="http://en.cppreference.com/w/cpp/container/map">map</a>-ами называются такие структуры данных, которые хранят набор пар, и позволяют эффективно по первому элементу пары (который называется ключом) находить соответствующий ему второй элемент пары (называется значением). Существует две распространенные реализаций map-ов: деревья поиска и хеш-таблицы. Далее в этом задании я буду предполагать, что map устроен как бинарное дерево поиска.</p>
     <p>Также как и map-ы, bimap-ы хранят набор пар и позволяют эффективно по первому элементу пары находить второй, а по второму &mdash; первый. То есть поиск можно делать в обе стороны. Первый элемент пары я буду называть left, второй &mdash; right.</p>
     <p>Наивная реализация bimap-а, могла бы состоять из двух map-ов: прямой и обратной. Прямая использовалась бы для поиска из left в right, а обратная &mdash; из right в left. Такая реализация не является эффективной, так как в ней на каждую пару хранимую в bimap аллоцируется два объекта в хипе. Можно сделать эффективнее, если завести класс node следующего вида:</p>
-    <div class="codeblock"><pre>struct node
+    <div class="codeblock"><span class="keyword">struct</span> <span class="type">node</span>
 {
-    left_t  left_data;
-    node*   left_left;
-    node*   left_right;
-    node*   left_parent;
+    <span class="type">left_t</span>  <span class="var">left_data</span>;
+    <span class="type">node</span>*   <span class="var">left_left</span>;
+    <span class="type">node</span>*   <span class="var">left_right</span>;
+    <span class="type">node</span>*   <span class="var">left_parent</span>;
 
-    right_t right_data;
-    node*   right_left;
-    node*   right_right;
-    node*   right_parent;
-};</pre></div>
+    <span class="type">right_t</span> <span class="var">right_data</span>;
+    <span class="type">node</span>*   <span class="var">right_left</span>;
+    <span class="type">node</span>*   <span class="var">right_right</span>;
+    <span class="type">node</span>*   <span class="var">right_parent</span>;
+};</div>
     <p>В приведенном классе left_data и right_data являются значениями левого и правого элемента пары соответственно. left_{left,right,parent} образуют бинарное дерево поиска, в котором left_data является ключом. right_{left,right,parent} образуют бинарное дерево поиска, в котором right_data является ключом. То есть node-ы провязаны в два независимых дерева поиска.</p>
     <p>Обычное бинарное дерево поиска позволяет находить следующий по величине элемент и предыдущий по величине элемент. Такая структура node-ов как в bimap позволяет находить node со следующим по величине left, следующим по величине right, предыдущим по величине left, предыдущим по величине right.</p>
     <p>В std::map итераторы поддерживают две операции: перейти к следующему элементу по величине и перейди к предыдущему. begin() возвращает итератор на минимальный элемент, end() &mdash; на следующий за максимальным. Таким образом цикл от begin() до end() позволяет просмотреть все элементы std::map в порядке возрастания.</p>
     <p>В bimap итераторы можно сделать следующим способом. Существует два вида итераторов: left_iterator и right_iterator. Проход от begin_left() до end_left() позволяет просмотреть все левые элементы пар в возрастающем порядке. Проход от begin_right() до end_right() все правые элементы пар в возрастающем порядке. Оба вида итераторов имеют функцию flip(), которая возвращает итератор другого вида, но ссылающийся на эту же пару.</p>
     <h3>Задание</h3>
     <p>В этом задании необходимо реализовать класс со следующим интерфейсом:</p>
-    <div class="codeblock"><pre>struct bimap
+    <div class="codeblock"><pre><span class="keyword">struct</span> <span class="type">bimap</span>
 {
-    // Вы можете определить эти тайпдефы по вашему усмотрению.
-    typedef ... left_t;
-    typedef ... right_t;
+    <span class="comment">// Вы можете определить эти тайпдефы по вашему усмотрению.</span>
+    <span class="keyword">typedef</span> ... <span class="type">left_t</span>;
+    <span class="keyword">typedef</span> ... <span class="type">right_t</span>;
 
-    struct left_iterator;
-    struct right_iterator;
+    <span class="keyword">struct</span> <span class="type">left_iterator</span>;
+    <span class="keyword">struct</span> <span class="type">right_iterator</span>;
 
-    // Создает bimap не содержащий ни одной пары.
-    bimap();
+    <span class="comment">// Создает bimap не содержащий ни одной пары.</span>
+    <span class="var">bimap</span>();
 
-    // Деструктор. Вызывается при удалении объектов bimap.
-    // Инвалидирует все итераторы ссылающиеся на элементы этого bimap
-    // (включая итераторы ссылающиеся на элементы следующие за последними).
-    ~bimap();
+    <span class="comment">// Деструктор. Вызывается при удалении объектов bimap.</span>
+    <span class="comment">// Инвалидирует все итераторы ссылающиеся на элементы этого bimap</span>
+    <span class="comment">// (включая итераторы ссылающиеся на элементы следующие за последними).</span>
+    ~<span class="var">bimap</span>();
 
-    // Вставка пары (left, right), возвращает итератор на left.
-    // Если такой left или такой right уже присутствуют в bimap, вставка не
-    // производиться и возвращается end_left().
-    left_iterator insert(left_t const&amp; left, right_t const&amp; right);
+    <span class="comment">// Вставка пары (left, right), возвращает итератор на left.</span>
+    <span class="comment">// Если такой left или такой right уже присутствуют в bimap, вставка не</span>
+    <span class="comment">// производиться и возвращается end_left().</span>
+    <span class="type">left_iterator</span> <span class="var">insert</span>(<span class="type">left_t</span> <span class="keyword">const</span>&amp; left, <span class="type">right_t</span> <span class="keyword">const</span>&amp; right);
 
-    // Удаляет элемент и соответствующий ему парный.
-    // erase невалидного итератора неопределен.
-    // erase(end_left()) и erase(end_right()) неопределены.
-    // Пусть it ссылается на некоторый элемент e.
-    // erase инвалидирует все итераторы ссылающиеся на e и на элемент парный к e.
-    void erase(left_iterator it);
-    void erase(right_iterator it);
+    <span class="comment">// Удаляет элемент и соответствующий ему парный.</span>
+    <span class="comment">// erase невалидного итератора неопределен.</span>
+    <span class="comment">// erase(end_left()) и erase(end_right()) неопределены.</span>
+    <span class="comment">// Пусть it ссылается на некоторый элемент e.</span>
+    <span class="comment">// erase инвалидирует все итераторы ссылающиеся на e и на элемент парный к e.</span>
+    <span class="keyword">void</span> <span class="var">erase</span>(<span class="type">left_iterator</span> it);
+    <span class="keyword">void</span> <span class="var">erase</span>(<span class="type">right_iterator</span> it);
 
-    // Возвращает итератор по элементу. В случае если элемент не найден, возвращает
-    // end_left()/end_right() соответственно.
-    left_iterator  find_left (left_t  const&amp; left)  const;
-    right_iterator find_right(right_t const&amp; right) const;
+    <span class="comment">// Возвращает итератор по элементу. В случае если элемент не найден, возвращает</span>
+    <span class="comment">// end_left()/end_right() соответственно.</span>
+    <span class="type">left_iterator</span>  <span class="var">find_left</span> (<span class="type">left_t</span>  <span class="keyword">const</span>&amp; left)  <span class="keyword">const</span>;
+    <span class="type">right_iterator</span> <span class="var">find_right</span>(<span class="type">right_t</span> <span class="keyword">const</span>&amp; right) <span class="keyword">const</span>;
 
-    // Возващает итератор на минимальный по величине left
-    left_iterator begin_left() const;
-    // Возващает итератор на следующий за последним по величине left
-    left_iterator end_left() const;
+    <span class="comment">// Возващает итератор на минимальный по величине left</span>
+    <span class="type">left_iterator</span> <span class="var">begin_left</span>() <span class="keyword">const</span>;
+    <span class="comment">// Возващает итератор на следующий за последним по величине left</span>
+    <span class="type">left_iterator</span> <span class="var">end_left</span>() <span class="keyword">const</span>;
 
-    // Возващает итератор на минимальный по величине right
-    right_iterator begin_right() const;
-    // Возващает итератор на следующий за последним по величине right
-    right_iterator end_right() const;
+    <span class="comment">// Возващает итератор на минимальный по величине right</span>
+    <span class="type">right_iterator</span> <span class="var">begin_right</span>() <span class="keyword">const</span>;
+    <span class="comment">// Возващает итератор на следующий за последним по величине right</span>
+    <span class="type">right_iterator</span> <span class="var">end_right</span>() <span class="keyword">const</span>;
 };
 
-struct bimap::left_iterator
+<span class="keyword">struct</span> <span class="type">bimap</span>::<span class="type">left_iterator</span>
 {
-    // Элемент на который сейчас ссылается итератор.
-    // Разыменование итератора end_left() неопределено.
-    // Разыменование невалидного итератора неопределено.
-    left_t const&amp; operator*() const;
+    <span class="comment">// Элемент на который сейчас ссылается итератор.</span>
+    <span class="comment">// Разыменование итератора end_left() неопределено.</span>
+    <span class="comment">// Разыменование невалидного итератора неопределено.</span>
+    <span class="type">left_t</span> <span class="keyword">const</span>&amp; <span class="var">operator*</span>() <span class="keyword">const</span>;
 
-    // Переход к следующему по величине left'у.
-    // Инкремент итератора end_left() неопределен.
-    // Инкремент невалидного итератора неопределен.
-    left_iterator&amp; operator++();
-    left_iterator operator++(int);
+    <span class="comment">// Переход к следующему по величине left'у.</span>
+    <span class="comment">// Инкремент итератора end_left() неопределен.</span>
+    <span class="comment">// Инкремент невалидного итератора неопределен.</span>
+    <span class="type">left_iterator</span>&amp; <span class="var">operator++</span>();
+    <span class="type">left_iterator</span> <span class="var">operator++</span>(<span class="keyword">int</span>);
 
-    // Переход к предыдущему по величине left'у.
-    // Декремент итератора begin_left() неопределен.
-    // Декремент невалидного итератора неопределен.
-    left_iterator&amp; operator--();
-    left_iterator operator--(int);
+    <span class="comment">// Переход к предыдущему по величине left'у.</span>
+    <span class="comment">// Декремент итератора begin_left() неопределен.</span>
+    <span class="comment">// Декремент невалидного итератора неопределен.</span>
+    <span class="type">left_iterator</span>&amp; <span class="var">operator--</span>();
+    <span class="type">left_iterator</span> <span class="var">operator--</span>(<span class="keyword">int</span>);
     
-    // left_iterator ссылается на левый элемент некоторой пары.
-    // Эта функция возвращает итератор на правый элемент той же пары.
-    // end_left().flip() возращает end_right().
-    // end_right().flip() возвращает end_left().
-    // flip() невалидного итератора неопределен.
-    right_iterator flip() const;
+    <span class="comment">// left_iterator ссылается на левый элемент некоторой пары.</span>
+    <span class="comment">// Эта функция возвращает итератор на правый элемент той же пары.</span>
+    <span class="comment">// end_left().flip() возращает end_right().</span>
+    <span class="comment">// end_right().flip() возвращает end_left().</span>
+    <span class="comment">// flip() невалидного итератора неопределен.</span>
+    <span class="type">right_iterator</span> <span class="var">flip</span>() <span class="keyword">const</span>;
 };
 
-struct bimap::right_iterator
+<span class="keyword">struct</span> <span class="type">bimap</span>::<span class="type">right_iterator</span>
 {
-    // Здесь всё аналогично left_iterator.
-    right_t const&amp; operator*() const;
+    <span class="comment">// Здесь всё аналогично left_iterator.</span>
+    <span class="type">right_t</span> <span class="keyword">const</span>&amp; <span class="var">operator*</span>() <span class="keyword">const</span>;
 
-    right_iterator&amp; operator++();
-    right_iterator operator++(int);
+    <span class="type">right_iterator</span>&amp; <span class="var">operator++</span>();
+    <span class="type">right_iterator</span> <span class="var">operator++</span>(<span class="keyword">int</span>);
 
-    right_iterator&amp; operator--();
-    right_iterator operator--(int);
+    <span class="type">right_iterator</span>&amp; <span class="var">operator--</span>();
+    <span class="type">right_iterator</span> <span class="var">operator--</span>(<span class="keyword">int</span>);
     
-    left_iterator flip() const;
+    <span class="type">left_iterator</span> <span class="var">flip</span>() <span class="keyword">const</span>;
 };</pre></div>
     <p>bimap хранит набор пар (left, right). begin_left()/end_left() позволяет пройти все левые элементы пар в порядке возрастания. begin_right()/end_right() позволяет пройти все правые элементы пар в порядке возрастания. Функция итератора flip() позволяет стоя на левом элементе какой-то пары перейти к правому и наоборот.</p>
     <p>Необходимо, чтобы bimap создавал один объект в памяти на каждую пару хранящуюся в нем.</p>
