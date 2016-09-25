@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>LRU Cache</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #ffffff;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .keyword
+      {
+        color: #2020ff;
+      }
+      .type
+      {
+        color: #008080;
+      }
+      .var
+      {
+        color: #790000;
+      }
+      .comment
+      {
+        color: #006500;
+      }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h2>LRU Cache</h2>
+    <p><i>(задание к пересдаче зачета 1.10.2016)</i></p>
+    <h3>Введение</h3>
+    <p>В данном задании необходимо написать <a href="https://en.wikipedia.org/wiki/Cache_algorithms#Examples">LRU-cache</a> (<i>least recently used cache</i>).</p>
+    <p>Кешом называется map, который имеет ограниченный максимальный размер. Чтобы не превышать
+    максимальный размер, при вставке нового элемента, удаляют некоторый старый (говорят &mdash;
+    новые элементы вытесняют старые). Существуют разные стратегии вытеснения. Одна из них
+    называется LRU (<i>least recently used</i>) &mdash; вытесняется самый старый не
+    использовавшийся элемент.</p>
+    <p>Наивная реализация lru-кеша, могла бы содержать дерево поиска и двусвязный список.
+    Двусвязный список хранил бы элементы в порядке последнего обращения. То есть в голове списка
+    лежит последний элемент к которому обращались, в хвосте &mdash; элемент, к которому дольше
+    всего не обращались. При обращении к элементу он переносится в голову списка. При вытеснении
+    удаляется элемент из хвоста.</p>
+    <p>В <a href="bimap.html">предыдущем задании</a> была применена оптимизация, когда один
+    набор node-ов прошивался в два дерева. В этом задании тоже можно применить подобную
+    оптимизацию.</p>
+    <div class="codeblock"><span class="keyword">struct</span> <span class="type">node</span>
+{
+    <span class="type">key_type</span>     <span class="var">key</span>;
+    <span class="type">mapped_type</span>* <span class="var">mapped</span>;
+
+    <span class="type">node</span>*        <span class="var">left</span>;
+    <span class="type">node</span>*        <span class="var">right</span>;
+    <span class="type">node</span>*        <span class="var">parent</span>;
+
+    <span class="type">node</span>*        <span class="var">next</span>;
+    <span class="type">node</span>*        <span class="var">prev</span>;
+};</div>
+    <p>left, right, parent образуют бинарное дерево поиска по ключу key.
+    next, prev &mdash; двусвязный список по последнему обращению.</p>
+    <p>В lru-кеше можно сделать ещё одну оптимизацию. Обратим внимание, что после того,
+    как кеш достиг своего максимального размера, каждая вставка нового элемента приводит
+    к удалению старого. Наивная реализация могла бы выделять новую node-у, и удалять
+    освобождать старую. Но эту операцию можно сделать вообще без аллокации памяти, если
+    переиспользовать node от старого элемента.</p>
+    <h3>Задание</h3>
+    <p>В этом задании необходимо реализовать класс со следующим интерфейсом:</p>
+    <div class="codeblock"><pre><span class="keyword">struct</span> <span class="type">lru_cache</span>
+{
+    <span class="comment">// Вы можете определить эти тайпдефы по вашему усмотрению.</span>
+    <span class="keyword">typedef</span> ... <span class="type">key_type</span>;
+    <span class="keyword">typedef</span> ... <span class="type">mapped_type</span>;
+    <span class="keyword">typedef</span> std::<span class="type">pair</span>&lt;<span class="type">key_type</span>, <span class="type">mapped_type</span>&gt; <span class="type">value_type</span>;
+
+    <span class="comment">// Bidirectional iterator</span>
+    <span class="keyword">struct</span> <span class="type">iterator</span>;
+
+    <span class="comment">// Создает пустой lru_cache с указанной capacity.</span>
+    <span class="var">bimap</span>(<span class="type">size_t</span> capacity);
+
+    <span class="comment">// Деструктор. Вызывается при удалении объектов lru_cache.</span>
+    <span class="comment">// Инвалидирует все итераторы ссылающиеся на элементы этого lru_cache</span>
+    <span class="comment">// (включая итераторы ссылающиеся на элементы следующие за последними).</span>
+    ~<span class="var">bimap</span>();
+
+    <span class="comment">// Поиск элемента.</span>
+    <span class="comment">// Возвращает итератор на элемент найденный элемент, либо end().</span>
+    <span class="comment">// Если элемент найден, он помечается как наиболее поздно использованный.</span>
+    <span class="type">iterator</span> <span class="var">find</span>(<span class="type">key_type</span>);
+
+    <span class="comment">// Вставка элемента.</span>
+    <span class="comment">// 1. Если такой ключ уже присутствует, вставка не производиться, возвращается итератор</span>
+    <span class="comment">//    на уже присутствующий элемент и false.</span>
+    <span class="comment">// 2. Если такого ключа ещё нет, производиться вставка, возвращается итератор на созданный</span>
+    <span class="comment">//    элемент и true.</span>
+    <span class="comment">// Если после вставки число элементов кеша превышает capacity, самый давно не</span>
+    <span class="comment">// использованный элемент удаляется. Все итераторы на него инвалидируется.</span>
+    <span class="comment">// Вставленный либо найденный с помощью этой функции элемент помечается как наиболее поздно</span>
+    <span class="comment">// использованный.</span>
+    std::<span class="type">pair</span>&lt;<span class="type">iterator</span>, <span class="keyword">bool</span>&gt; <span class="var">insert</span>(<span class="type">value_type</span>);
+
+    <span class="comment">// Удаление элемента.</span>
+    <span class="comment">// Все итераторы на указанный элемент инвалидируются.</span>
+    <span class="keyword">void</span> <span class="type">erase</span>(<span class="type">iterator</span>);
+
+    <span class="comment">// Возващает итератор на элемент с минимальный ключом.</span>
+    <span class="type">left_iterator</span> <span class="var">begin</span>() <span class="keyword">const</span>;
+    <span class="comment">// Возващает итератор на элемент следующий за элементом с максимальным ключом.</span>
+    <span class="type">left_iterator</span> <span class="var">end</span>() <span class="keyword">const</span>;
+};</pre></div>
+    <p>Необходимо, чтобы lru_cache создавал один объект в памяти на каждый элемент хранящийся
+    в нем. Необходимо, чтобы insert приводящий к вытеснению уже существующего элемента
+    не аллоцировал память.</p>
+    <p>Необходимо, чтобы bimap использовал внутри себя дерево поиска (не обязательно сбалансированное), а операции поиска/вставки/удаления работали за O(h), где h &mdash; высота дерева.</p>
+    <p>Конструкторы копирования и оператор присваивания bimap-а должны быть запрещены.</p>
+    <p>В случаях когда это задание не предписывает определенного поведения, любое поведение
+    конкретной реализации считается удовлетворяющим заданию. Предполагается, что не все случаи
+    неопределенного поведения, указанные в этом задании, можно свести к assert-у, не жертвуя
+    простотой или эффективностью реализации. В тех случаях, где это уместно, рекомендуемым
+    поведением является срабатывание assert-а.</p>
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer">
+        <img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+      </a>
+    </p>
+  </body>
+</html>
