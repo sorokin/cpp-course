@@ -66,15 +66,15 @@
     оптимизацию. Можно завести класс node следующего вида:</p>
     <div class="codeblock"><span class="keyword">struct</span> <span class="type">node</span>
 {
-    <span class="type">key_type</span>     <span class="var">key</span>;
-    <span class="type">mapped_type</span>* <span class="var">mapped</span>;
+    <span class="type">key_type</span>    <span class="var">key</span>;
+    <span class="type">mapped_type</span> <span class="var">mapped</span>;
 
-    <span class="type">node</span>*        <span class="var">left</span>;
-    <span class="type">node</span>*        <span class="var">right</span>;
-    <span class="type">node</span>*        <span class="var">parent</span>;
+    <span class="type">node</span>*       <span class="var">left</span>;
+    <span class="type">node</span>*       <span class="var">right</span>;
+    <span class="type">node</span>*       <span class="var">parent</span>;
 
-    <span class="type">node</span>*        <span class="var">next</span>;
-    <span class="type">node</span>*        <span class="var">prev</span>;
+    <span class="type">node</span>*       <span class="var">next</span>;
+    <span class="type">node</span>*       <span class="var">prev</span>;
 };</div>
     <p>left, right, parent образуют бинарное дерево поиска по ключу key.
     next, prev &mdash; двусвязный список по последнему обращению.</p>
