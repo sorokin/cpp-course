@@ -127,7 +127,35 @@
     <span class="type">iterator</span> <span class="var">begin</span>() <span class="keyword">const</span>;
     <span class="comment">// Возващает итератор на элемент следующий за элементом с максимальным ключом.</span>
     <span class="type">iterator</span> <span class="var">end</span>() <span class="keyword">const</span>;
-};</pre></div>
+};
+
+<span class="keyword">struct</span> <span class="type">lru_cache</span>::<span class="type">iterator</span>
+{
+    <span class="comment">// Элемент на который сейчас ссылается итератор.</span>
+    <span class="comment">// Разыменование итератора end() неопределено.</span>
+    <span class="comment">// Разыменование невалидного итератора неопределено.</span>
+    <span class="type">value_type</span> <span class="keyword">const</span>&amp; <span class="var">operator*</span>() <span class="keyword">const</span>;
+
+    <span class="comment">// Переход к элементу со следующим по величине ключом.</span>
+    <span class="comment">// Инкремент итератора end() неопределен.</span>
+    <span class="comment">// Инкремент невалидного итератора неопределен.</span>
+    <span class="type">iterator</span>&amp; <span class="var">operator++</span>();
+    <span class="type">iterator</span> <span class="var">operator++</span>(<span class="keyword">int</span>);
+
+    <span class="comment">// Переход к элементу со следующим по величине ключом.</span>
+    <span class="comment">// Декремент итератора begin() неопределен.</span>
+    <span class="comment">// Декремент невалидного итератора неопределен.</span>
+    <span class="type">iterator</span>&amp; <span class="var">operator--</span>();
+    <span class="type">iterator</span> <span class="var">operator--</span>(<span class="keyword">int</span>);
+};
+
+<span class="comment">// Сравнение. Итераторы считаются эквивалентными если одни ссылаются на один и тот же элемент.</span>
+<span class="comment">// Сравнение с невалидным итератором не определено.</span>
+<span class="comment">// Сравнение итераторов двух разных контейнеров не определено.</span>
+<span class="keyword">bool</span> <span class="var">operator==</span>(<span class="type">lru_cache</span>::<span class="type">iterator</span>, <span class="type">lru_cache</span>::<span class="type">iterator</span>);
+<span class="keyword">bool</span> <span class="var">operator!=</span>(<span class="type">lru_cache</span>::<span class="type">iterator</span>, <span class="type">lru_cache</span>::<span class="type">iterator</span>);
+
+</pre></div>
     <p>Необходимо, чтобы lru_cache создавал один объект в памяти на каждый элемент хранящийся
     в нем. Необходимо, чтобы insert приводящий к вытеснению уже существующего элемента
     не аллоцировал память.</p>
