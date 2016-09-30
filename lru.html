@@ -124,9 +124,9 @@
     <span class="keyword">void</span> <span class="type">erase</span>(<span class="type">iterator</span>);
 
     <span class="comment">// Возващает итератор на элемент с минимальный ключом.</span>
-    <span class="type">left_iterator</span> <span class="var">begin</span>() <span class="keyword">const</span>;
+    <span class="type">iterator</span> <span class="var">begin</span>() <span class="keyword">const</span>;
     <span class="comment">// Возващает итератор на элемент следующий за элементом с максимальным ключом.</span>
-    <span class="type">left_iterator</span> <span class="var">end</span>() <span class="keyword">const</span>;
+    <span class="type">iterator</span> <span class="var">end</span>() <span class="keyword">const</span>;
 };</pre></div>
     <p>Необходимо, чтобы lru_cache создавал один объект в памяти на каждый элемент хранящийся
     в нем. Необходимо, чтобы insert приводящий к вытеснению уже существующего элемента
