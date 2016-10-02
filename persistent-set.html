@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Persistent Set</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #ffffff;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .keyword
+      {
+        color: #2020ff;
+      }
+      .type
+      {
+        color: #008080;
+      }
+      .var
+      {
+        color: #790000;
+      }
+      .comment
+      {
+        color: #006500;
+      }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h2>Persistent Set</h2>
+    <p><i>(задание к пересдаче зачета 8.10.2016)</i></p>
+    <h3>Введение</h3>
+    <p><a href="https://en.wikipedia.org/wiki/Persistent_data_structure">Persistent</a>
+    структурой данных называется структура данных, модификация которой не портит
+    предыдущую версию, позволяя работать как со старой версией этой структуры данных,
+    так и с новой.</p>
+    <p>Одной из самых простых в реализации persistent структурой данных является persistent
+    дерево поиска. Со ссылкам: <a href="https://en.wikipedia.org/wiki/Persistent_data_structure#Trees">[1]</a> и <a href="http://neerc.ifmo.ru/wiki/index.php?title=%D0%9F%D0%B5%D1%80%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BD%D1%82%D0%BD%D1%8B%D0%B5_%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D1%8B_%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85#.D0.9C.D0.B5.D1.82.D0.BE.D0.B4_.D0.BA.D0.BE.D0.BF.D0.B8.D1.80.D0.BE.D0.B2.D0.B0.D0.BD.D0.B8.D0.B5_.D0.BF.D1.83.D1.82.D0.B8">[2]</a>
+    можно прочитать как они устроены.</p>
+    <h3>Задание</h3>
+    <p>В этом задании необходимо реализовать класс со следующим интерфейсом:</p>
+    <div class="codeblock"><pre><span class="keyword">struct</span> <span class="type">persistent_set</span>
+{
+    <span class="comment">// Вы можете определить этот тайпдеф по вашему усмотрению.</span>
+    <span class="keyword">typedef</span> ... <span class="type">value_type</span>;
+
+    <span class="comment">// <a href="http://en.cppreference.com/w/cpp/concept/BidirectionalIterator">Bidirectional</a> iterator.</span>
+    <span class="keyword">struct</span> <span class="type">iterator</span>;
+
+    <span class="comment">// Создает пустой persistent_set.</span>
+    <span class="var">persistent_set</span>();
+
+    <span class="comment">// Создает копию указанного persistent_set-а.</span>
+    <span class="var">persistent_set</span>(<span class="type">persistent_set</span> <span class="keyword">const</span>&amp;);
+
+    <span class="comment">// Изменяет this так, чтобы он содержал те же элементы, что и rhs.</span>
+    <span class="comment">// Инвалидирует все итераторы, принадлежащие persistent_set'у this, включая end().</span>
+    <span class="type">persistent_set</span>&amp; <span class="var">operator=</span>(<span class="type">persistent_set</span> <span class="keyword">const</span>&amp; rhs);
+
+    <span class="comment">// Деструктор. Вызывается при удалении объектов persistent_set.</span>
+    <span class="comment">// Инвалидирует все итераторы ссылающиеся на элементы этого persistent_set</span>
+    <span class="comment">// (включая итераторы ссылающиеся на элементы следующие за последними).</span>
+    ~<span class="var">persistent_set</span>();
+
+    <span class="comment">// Поиск элемента.</span>
+    <span class="comment">// Возвращает итератор на элемент найденный элемент, либо end().</span>
+    <span class="comment">// Если элемент найден, он помечается как наиболее поздно использованный.</span>
+    <span class="type">iterator</span> <span class="var">find</span>(<span class="type">value_type</span>);
+
+    <span class="comment">// Вставка элемента.</span>
+    <span class="comment">// 1. Если такой ключ уже присутствует, вставка не производиться, возвращается итератор</span>
+    <span class="comment">//    на уже присутствующий элемент и false.</span>
+    <span class="comment">// 2. Если такого ключа ещё нет, производиться вставка, возвращается итератор на созданный</span>
+    <span class="comment">//    элемент и true.</span>
+    <span class="comment">// Инвалидирует все итераторы, принадлежащие persistent_set'у this, включая end().</span>
+    std::<span class="type">pair</span>&lt;<span class="type">iterator</span>, <span class="keyword">bool</span>&gt; <span class="var">insert</span>(<span class="type">value_type</span>);
+
+    <span class="comment">// Удаление элемента.</span>
+    <span class="comment">// Инвалидирует все итераторы, принадлежащие persistent_set'у this, включая end().</span>
+    <span class="keyword">void</span> <span class="type">erase</span>(<span class="type">iterator</span>);
+
+    <span class="comment">// Возващает итератор на элемент с минимальный ключом.</span>
+    <span class="type">iterator</span> <span class="var">begin</span>() <span class="keyword">const</span>;
+    <span class="comment">// Возващает итератор на элемент следующий за элементом с максимальным ключом.</span>
+    <span class="type">iterator</span> <span class="var">end</span>() <span class="keyword">const</span>;
+};
+
+<span class="keyword">struct</span> <span class="type">persistent_set</span>::<span class="type">iterator</span>
+{
+    <span class="comment">// Элемент на который сейчас ссылается итератор.</span>
+    <span class="comment">// Разыменование итератора end() неопределено.</span>
+    <span class="comment">// Разыменование невалидного итератора неопределено.</span>
+    <span class="type">value_type</span> <span class="keyword">const</span>&amp; <span class="var">operator*</span>() <span class="keyword">const</span>;
+
+    <span class="comment">// Переход к элементу со следующим по величине ключом.</span>
+    <span class="comment">// Инкремент итератора end() неопределен.</span>
+    <span class="comment">// Инкремент невалидного итератора неопределен.</span>
+    <span class="type">iterator</span>&amp; <span class="var">operator++</span>();
+    <span class="type">iterator</span> <span class="var">operator++</span>(<span class="keyword">int</span>);
+
+    <span class="comment">// Переход к элементу со следующим по величине ключом.</span>
+    <span class="comment">// Декремент итератора begin() неопределен.</span>
+    <span class="comment">// Декремент невалидного итератора неопределен.</span>
+    <span class="type">iterator</span>&amp; <span class="var">operator--</span>();
+    <span class="type">iterator</span> <span class="var">operator--</span>(<span class="keyword">int</span>);
+};
+
+<span class="comment">// Сравнение. Итераторы считаются эквивалентными если одни ссылаются на один и тот же элемент.</span>
+<span class="comment">// Сравнение с невалидным итератором не определено.</span>
+<span class="comment">// Сравнение итераторов двух разных контейнеров не определено.</span>
+<span class="keyword">bool</span> <span class="var">operator==</span>(<span class="type">persistent_set</span>::<span class="type">iterator</span>, <span class="type">persistent_set</span>::<span class="type">iterator</span>);
+<span class="keyword">bool</span> <span class="var">operator!=</span>(<span class="type">persistent_set</span>::<span class="type">iterator</span>, <span class="type">persistent_set</span>::<span class="type">iterator</span>);
+
+</pre></div>
+    <p>Обратите внимание, что все модифицирующие операции persistent_set-а инвалидируют все
+    итераторы принадлежащие этому persistent_set-у.</p>
+    <p>Разрешается реализовывать persistent_set с помощью persistent несбалансированного дерева поиска. Операции поиска, вставки,
+    удаления должны работать за O(h), где h &mdash; высота дерева.</p>
+    <p>Операции копирования и присваивания должны выполняться за O(1) и удовлетворять гарантии
+    безопасности исключений nothrow.</p>
+    <p>В случаях когда это задание не предписывает определенного поведения, любое поведение
+    конкретной реализации считается удовлетворяющим заданию. Предполагается, что не все случаи
+    неопределенного поведения, указанные в этом задании, можно свести к assert-у, не жертвуя
+    простотой или эффективностью реализации. В тех случаях, где это уместно, рекомендуемым
+    поведением является срабатывание assert-а.</p>
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer">
+        <img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+      </a>
+    </p>
+  </body>
+</html>
