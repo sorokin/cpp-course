@@ -143,6 +143,18 @@
           <li>swap trick</li>
           <li>deleted functions</li>
        </ul>
+    <h4>Лекция 15</h4>
+       <ul>
+          <li>механизмы ОС для аллокации памяти
+             <ul>
+                <li>mmap/munmap</li>
+                <li>VirtualAlloc/VirtualFree</li>
+             </ul>
+          </li>
+          <li>аллокаторы памяти</li>
+          <li>small-object optimization<sup id="cite_ref_28"><a href="#cite_note_28">[28]</a></sup><sup id="cite_ref_29a"><a href="#cite_note_29">[29]</a></sup></li>
+          <li>copy-on-write optimization<sup id="cite_ref_29b"><a href="#cite_note_29">[29]</a></sup></li>
+       </ul>
     <!-- TODO
 
     1. С++-style type casts
@@ -199,6 +211,8 @@
       <li id="cite_note_25"><b><a href="#cite_ref_25">^</a></b> Yann Collet &mdash; <a href="http://fastcompression.blogspot.ru/2014/09/counting-bytes-fast-little-trick-from.html">Counting bytes fast &mdash; little trick from FSE</a></li>
       <li id="cite_note_26"><b><a href="#cite_ref_26">^</a></b> <a href="https://stackoverflow.com/questions/25078285/replacing-a-32-bit-loop-count-variable-with-64-bit-introduces-crazy-performance">POPCOUNT false dependency bug</a></li>
       <li id="cite_note_27"><b><a href="#cite_ref_27">^</a></b> <a href="http://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-an-unsorted-array">A good branch misprediction example</a></li>
+      <li id="cite_note_28"><b><a href="#cite_ref_28">^</a></b> <a href="http://info.prelert.com/blog/cpp-stdstring-implementations">David Roberts &mdash; A look at std::string implementations in C++</a></li>
+      <li id="cite_note_29"><b><a href="#cite_ref_29a">^</a><a href="#cite_ref_29b">^</a></b> Nicholas Ormrod &mdash; The strange details of std::string at Facebook (CppCon 2016) <a href="https://github.com/CppCon/CppCon2016/raw/master/Presentations/The%20strange%20details%20of%20std%20string%20at%20Facebook/The%20strange%20details%20of%20std%20string%20at%20Facebook%20-%20Nicholas%20Ormrod%20-%20CppCon%202016.pdf">Slides</a> <a href="https://www.youtube.com/watch?v=kPR8h4-qZdk">Video</a></li>
     </ol>
 <!--
     On discussion of alignment: http://www.catb.org/esr/structure-packing/
