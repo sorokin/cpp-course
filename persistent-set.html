@@ -91,7 +91,7 @@
     <span class="comment">//    на уже присутствующий элемент и false.</span>
     <span class="comment">// 2. Если такого ключа ещё нет, производиться вставка, возвращается итератор на созданный</span>
     <span class="comment">//    элемент и true.</span>
-    <span class="comment">// Инвалидирует все итераторы, принадлежащие persistent_set'у this, включая end().</span>
+    <span class="comment">// Если вставка произведена, инвалидирует все итераторы, принадлежащие persistent_set'у this, включая end().</span>
     std::<span class="type">pair</span>&lt;<span class="type">iterator</span>, <span class="keyword">bool</span>&gt; <span class="var">insert</span>(<span class="type">value_type</span>);
 
     <span class="comment">// Удаление элемента.</span>
