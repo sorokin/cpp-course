@@ -312,6 +312,10 @@ TEST(correctness, and_signed)
     EXPECT_TRUE((b & -1) == 0xaa);
     EXPECT_TRUE((a & (0xaa - 256)) == 0);
     EXPECT_TRUE((a & (0xcc - 256)) == 0x44);
+
+    big_integer c = 0x55;
+    big_integer d = 0xcc;
+    EXPECT_EQ(big_integer(0x44), c & d);
 }
 
 TEST(correctness, and_return_value)
@@ -330,6 +334,10 @@ TEST(correctness, or_)
     EXPECT_TRUE((a | b) == 0xff);
     a |= b;
     EXPECT_TRUE(a == 0xff);
+
+    big_integer c = 0x55;
+    big_integer d = 0xcc;
+    EXPECT_EQ(big_integer(0xdd), c | d);
 }
 
 TEST(correctness, or_signed)
@@ -354,6 +362,10 @@ TEST(correctness, xor_)
     big_integer b = 0xcc;
 
     EXPECT_TRUE((a ^ b) == 0x66);
+
+    big_integer c = 0x55;
+    big_integer d = 0xcc;
+    EXPECT_EQ(big_integer(0x99), c ^ d);
 }
 
 TEST(correctness, xor_signed)
