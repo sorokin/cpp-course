@@ -293,6 +293,14 @@ TEST(correctness, negation)
     EXPECT_TRUE(b == -666);
 }
 
+TEST(correctness, negation_int_min)
+{
+    big_integer a = std::numeric_limits<int>::min();
+    big_integer b = -a;
+
+    EXPECT_EQ(std::numeric_limits<int>::max(), b - 1);
+}
+
 TEST(correctness, and_)
 {
     big_integer a = 0x55;
