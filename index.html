@@ -190,6 +190,85 @@
           <li>restrict keyword</li>
           <li>undefined behavior<sup id="cite_ref_48"><a href="#cite_note_48">[48]</a></sup><sup id="cite_ref_49"><a href="#cite_note_49">[49]</a></sup><sup id="cite_ref_50"><a href="#cite_note_50">[50]</a></sup></li>
        </ul>
+    <h4>Лекция 21</h4>
+       <ul>
+          <li>std::shared_ptr
+            <ul>
+              <li>custom deleter</li>
+              <li>shared_ptr на члены-класса</li>
+              <li>внутреннее устройство shared_ptr</li>
+              <li>std::make_shared</li>
+              <li>weak_ptr</li>
+              <li>*_pointer_cast</li>
+            </ul>
+          </li>
+          <li>return value optimization, named return value optimizations</li>
+       </ul>
+    <h4>Лекция 22</h4>
+      <ul>
+        <li>rvalue references
+          <ul>
+            <li>overloading</li>
+            <li>std::move</li>
+          </ul>
+        </li>
+        <li>std::auto_ptr</li>
+        <li>проблемы auto_ptr, зачем нужен std::unique_ptr</li>
+        <li>сравнить
+          <ul>
+            <li>vector&lt;shared_ptr&lt;file_descriptor&gt;&gt;</li>
+            <li>vector&lt;file_descriptor*&gt;</li>
+            <li>ptr_vector&lt;file_descriptor&gt;</li>
+            <li>vector&lt;unique_ptr&lt;file_descriptor&gt;&gt;</li>
+            <li>vector&lt;int&gt;</li>
+            <li>vector&lt;file_descriptor&gt;</li>
+          </ul>
+        </li>
+        <li>rvalue references
+          <ul>
+            <li>deduction rules</li>
+            <li>reference collapsing rule</li>
+            <li>std::forward</li>
+          </ul>
+        </li>
+        <li>variadic templates</li>
+      </ul>
+    <h4>Лекция 23</h4>
+      <ul>
+        <li>anonymous functions</li>
+        <li>std::function</li>
+        <li>понятие type-erasure: std::function, any, any_iterator, any_range</li>
+        <li>signals (aka listeners, observers)
+          <ul>
+            <li>понятие reentrancy</li>
+          </ul>
+        </li>
+      </ul>
+    <h4>Лекция 24</h4>
+      <ul>
+        <li>result_type, протокол result_of</li>
+        <li>decltype</li>
+        <li>std::optional</li>
+        <li>alignment, alignof, alignas</li>
+        <li>std::variant</li>
+        <li>Boost.TypeErasure</li>
+      </ul>
+    <h4>Лекции 25, 26</h4>
+      <ul>
+        <li>понятние многопоточности</li>
+        <li>std::thread</li>
+        <li>понятие race condition</li>
+        <li>std::mutex</li>
+        <li>закон Амдала</li>
+        <li>понятние deadlock</li>
+        <li>std::atomic
+          <ul>
+            <li>false sharing</li>
+            <li>relaxed atomics</li>
+          </ul>
+        </li>
+        <li>пример concurrent_queue</li>
+      </ul>
     <!-- TODO
 
     1. С++-style type casts
