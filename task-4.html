@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Задание №4</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #e0e0e0;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h2>Задание №4</h2>
+    <p>В данном задании необходимо реализовать библиотеку для сжатия Хаффманом.</p>
+    <p>Программа должна состоять из трех частей:</p>
+    <ul>
+      <li>Библиотека, которая реализует операции сжатия и распаковки.</li>
+      <li>Консольная утилита, которая позволяет сжимать/распаковывать файлы.</li>
+      <li>Программа с набором тестов, проверяющая корректность библиотеки.</li>
+    </ul>
+    <h3>Требования к библиотеке</h3>
+    <ul>
+      <li>Библиотека должна компилироваться в отдельную статическую либо динамическую библиотеку. И не должна
+      зависеть ни от каких функций определенных в консольной программе либо в программе-тестах.</li>
+      <li>Библиотека должна предоставлять операции для сжатия/распаковки данных находящихся в оперативной
+      памяти.</li>
+      <li>Библиотека не должна использовать функции для работы с файлами напрямую.</li>
+      <li>Интерфейс библиотеки должен быть достаточен, чтобы консольная утилита могла сжать/распаковать файл
+      размером превосходящий размер доступной оперативной памяти.</li>
+    </ul>
+    <h3>Требования к консольной утилите</h3>
+    <ul>
+      <li>С помощь консольной утилиты должно быть возможно сжать один файл, записав в другой сжатое
+      представление, а также распаковать файл со сжатым представлением, получив исходный файл.</li>
+      <li>Консольная утилита не должна пытаться загружать весь файл в память целиком и должна работать
+      в случае, когда сжимаемый/распаковываемых файл превосходит размер доступной оперативной памяти.</li>
+    </ul>
+    <h3>Требования к тестам</h3>
+    <ul>
+      <li>Тесты должны обеспечивать максимальное statement-покрытие (statement coverage) насколько это возможно.</li>
+    </ul>
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer">
+        <img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+      </a>
+    </p>
+  </body>
+</html>
+
