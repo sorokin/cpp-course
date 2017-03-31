@@ -37,6 +37,8 @@
       <li>Если в <span class="codein">big_integer</span> хранится число <span class="codein">-2<sup>N</sup> ≤ a ≤ 2<sup>N</sup>-1</span>, <span class="codein">big_integer</span> не должен выделять
       динамическую память. Конкретное значение <span class="codein">N</span> вы можете выбрать самостоятельно, допустимыми являются
       любые <span class="codein">N ≥ 30</span>.</li>
+      <li>Числа <span class="codein">a &lt; -2<sup>N</sup></span> и <span class="codein">a > 2<sup>N</sup>-1</span> должны выделять
+      не больше одного блока динамической памяти на каждый экземпляр big_integer.</li>
       <li>Конструктор копирования и оператор присваивания должны работать за O(1) и удовлетворять гарантии
       безопасности исключений nothrow.</li>
     </ul>
