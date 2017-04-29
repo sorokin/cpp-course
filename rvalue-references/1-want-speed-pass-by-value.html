@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Want Speed? Pass by&nbsp;Value</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #f9f9f9;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .author
+      {
+        font-family:'Liberation Sans', sans-serif;
+        font-size: 10pt;
+        font-style: italic;
+      }
+    table {width: 100%;}
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+<body>
+    <div class="author">August 15th, 2009 by Dave Abrahams</div>
+    <h2 class="article_view_header">Want Speed? Pass by&nbsp;Value.</h2>
+
+    <p>Be honest: how does the following code make you <em>feel</em>?</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> get_names<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+…
+std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> <span style="color: #0000ff;">const</span> names <span style="color: #000080;">=</span> get_names<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span></pre></div>
+
+
+<p>Frankly, even though I should know better, it makes me nervous.  In
+principle, when <code>get_names()</code> returns, we have to copy a <code>vector</code> of
+<code>string</code>s.  Then, we need to copy it again when we initialize
+<code>names</code>, and we need to destroy the first copy.  If there are N
+strings in the vector, each copy could require as many as N+1 memory
+allocations and a whole slew of cache-unfriendly data accesses as the
+string contents are copied.<span id="more-188"></span></p>
+
+<!-- more -->
+
+<p>Rather than confront that sort of anxiety, I&#8217;ve often fallen back on
+pass-by-reference to avoid needless copies:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">get_names<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span><span style="color: #000040;">&amp;</span> out_param <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+…
+std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> names<span style="color: #008080;">;</span>
+get_names<span style="color: #008000;">&#40;</span> names <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span></pre></div>
+
+
+<p>Unfortunately, this approach is far from ideal.</p>
+
+<ul>
+<li>The code grew by 150%</li>
+<li>We&#8217;ve had to drop <code>const</code>-ness because we&#8217;re mutating
+<code>names</code>.</li>
+<li><span id="functional">As functional programmers like to remind us, mutation makes code
+more complex to reason about by undermining <a href="https://wiki.haskell.org/Functional_programming#Purity">referential
+transparency and equational
+reasoning</a>.</span></li>
+<li>We no longer have strict value semantics<sup id="fnref:1"><a href="#fn:1" rel="footnote">1</a></sup> for <code>names</code>.</li>
+</ul>
+
+<p>But is it really necessary to mess up our code in this way to gain
+efficiency?  Fortunately, the answer turns out to be no (and
+especially not if you are using C++0x).  This article is the first in
+a series that explores rvalues and their impliciations for efficient
+value semantics in C++.</p>
+
+<h3>RValues</h3>
+
+<p>Rvalues are expressions that create anonymous temporary objects.  The
+name <em>rvalue</em> refers to the fact that an rvalue expression of builtin
+type can only appear on the <strong>r</strong>ight-hand side of an assignment.
+Unlike <em>lvalues</em>, which can always be used on the <strong>l</strong>eft-hand-side
+of an assignment, rvalue expressions yield objects without any
+persistent identity to assign <em>into</em>.<sup id="fnref:saks"><a href="#fn:saks" rel="footnote">2</a></sup></p>
+
+<p>The important thing about anonymous temporaries for our purposes,
+though, is that they can only be used once in an expression.  How
+could you possibly refer to such an object a second time?  It doesn&#8217;t
+have a name (thus, &#8220;anonymous&#8221;); and after the full expression is
+evaluated, the object is destroyed (thus, &#8220;temporary&#8221;)!</p>
+
+<p>Once you know you are copying from an <em>rvalue</em>, then, it should be
+possible to &#8220;steal&#8221; the expensive-to-copy resources from the source
+object and use them in the target object without anyone noticing.  In
+this case that would mean transferring ownership of the source vector&#8217;s
+dynamically-allocated array of strings to the target vector.  If we
+could somehow get the compiler to execute that &#8220;move&#8221; operation for
+us, it would be cheap&#8211;almost free&#8211;to initialize <code>names</code> from a
+vector returned by-value.</p>
+
+<p>That would take care of the second expensive copy, but what about the
+first?  When <code>get_names</code> returns, in principle, it has to copy the
+function&#8217;s return value from the inside of the function to the
+outside.  Well, it turns out that return values have the same property
+as anonymous temporaries: they are about to be destroyed, and won&#8217;t be
+used again.  So, we could eliminate the first expensive copy in the
+same way, transferring the resources from the return value on the
+inside of the function to the anonymous temporary seen by the caller.</p>
+
+<h3>Copy Elision and the <abbr title="Return Value Optimization">RVO</abbr></h3>
+
+<p>The reason I kept writing above that copies were made &#8220;in principle&#8221;
+is that the compiler is actually allowed to perform some optimizations
+based on the same principles we&#8217;ve just discussed.  This class of
+optimizations is known formally as <strong>copy elision</strong>. For example, in
+the <strong>R</strong>eturn <strong>V</strong>alue <strong>O</strong>ptimization (<abbr title="Return Value Optimization">RVO</abbr>), the calling function
+allocates space for the return value on its stack, and passes the
+address of that memory to the callee.  The callee can then construct a
+return value directly into that space, which eliminates the need to
+copy from inside to outside.  The copy is simply elided, or &#8220;edited
+out,&#8221; by the compiler.  So in code like the following, no copies are
+required:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> names <span style="color: #000080;">=</span> get_names<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span></pre></div>
+
+
+<p>Also, although the compiler is normally required to make a copy when a
+function parameter is <em>passed</em> by value (so modifications to the
+parameter inside the function can&#8217;t affect the caller), it is allowed
+to elide the copy, and simply use the source object itself, when the
+source is an rvalue.</p>
+
+
+<table><tr><td class="line_numbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="codeblock"><pre class="cpp" style="font-family:monospace;">std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> 
+sorted<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> names<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    std<span style="color: #008080;">::</span><span style="color: #007788;">sort</span><span style="color: #008000;">&#40;</span>names<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> names<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span>
+&nbsp;
+<span style="color: #666666;">// names is an lvalue; a copy is required so we don't modify names</span>
+std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> sorted_names1 <span style="color: #000080;">=</span> sorted<span style="color: #008000;">&#40;</span> names <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+&nbsp;
+<span style="color: #666666;">// get_names() is an rvalue expression; we can omit the copy!</span>
+std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> sorted_names2 <span style="color: #000080;">=</span> sorted<span style="color: #008000;">&#40;</span> get_names<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span></pre></td></tr></table>
+
+
+<p>This is pretty remarkable.  In principle, in line 12 above, the
+compiler can eliminate <em>all</em> the worrisome copies, making
+<code>sorted_names2</code> <em>the same object</em> as the one created in <code>get_names()</code>.
+In practice, though, the principle won&#8217;t take us quite that far, as
+I&#8217;ll explain later.</p>
+
+<h3 id="implications">Implications</h3>
+
+<p>Although copy elision is never required by the standard, recent
+versions of every compiler I&#8217;ve tested do perform these optimizations
+today.  But even if you don&#8217;t feel comfortable returning heavyweight
+objects by value, copy elision should still change the way you write
+code.</p>
+
+<p>Consider this cousin of our original <code>sorted(…)</code> function, which takes
+<code>names</code> by <code>const</code> reference and makes an explicit copy:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> 
+sorted2<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> names<span style="color: #008000;">&#41;</span> <span style="color: #666666;">// names passed by reference</span>
+<span style="color: #008000;">&#123;</span>
+    std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> r<span style="color: #008000;">&#40;</span>names<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>        <span style="color: #666666;">// and explicitly copied</span>
+    std<span style="color: #008080;">::</span><span style="color: #007788;">sort</span><span style="color: #008000;">&#40;</span>r<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> r<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+<p>Although <code>sorted</code> and <code>sorted2</code> seem at first to be identical, there
+could be a huge performance difference if a compiler does copy
+elision.  Even if the actual argument to <code>sorted2</code> is an rvalue, the
+source of the copy, <code>names</code>, is an lvalue,<sup id="fnref:named"><a href="#fn:named" rel="footnote">3</a></sup> so the copy can&#8217;t
+be optimized away.  In a sense, copy elision is a victim of the
+separate compilation model: inside the body of <code>sorted2</code>, there&#8217;s no
+information about whether the actual argument to the function is an
+rvalue; outside, at the call site, there&#8217;s no indication that a copy
+of the argument will eventually be made.</p>
+
+<p>That realization leads us directly to this guideline:</p>
+
+<blockquote>
+  <p><strong>Guideline</strong>: Don&#8217;t copy your function arguments.  Instead, pass them
+  by value and let the compiler do the copying.</p>
+</blockquote>
+
+<p>At worst, if your compiler doesn&#8217;t elide copies, performance will be
+no worse. At best, you&#8217;ll see an enormous performance <em>boost</em>.</p>
+
+<p>One place you can apply this guideline immediately is in assignment
+operators.  The canonical, easy-to-write, always-correct,
+strong-guarantee, copy-and-swap assignment operator is often seen
+written this way:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">T<span style="color: #000040;">&amp;</span> T<span style="color: #008080;">::</span><span style="color: #007788;">operator</span><span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>T <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> x<span style="color: #008000;">&#41;</span> <span style="color: #666666;">// x is a reference to the source</span>
+<span style="color: #008000;">&#123;</span> 
+    T tmp<span style="color: #008000;">&#40;</span>x<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>          <span style="color: #666666;">// copy construction of tmp does the hard work</span>
+    swap<span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span>, tmp<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>  <span style="color: #666666;">// trade our resources for tmp's</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>      <span style="color: #666666;">// our (old) resources get destroyed with tmp </span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+<p>but in light of copy elision, that formulation is glaringly
+inefficient!  It&#8217;s now &#8220;obvious&#8221; that the correct way to write a
+copy-and-swap assignment is:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">T<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>T x<span style="color: #008000;">&#41;</span>    <span style="color: #666666;">// x is a copy of the source; hard work already done</span>
+<span style="color: #008000;">&#123;</span>
+    swap<span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span>, x<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>  <span style="color: #666666;">// trade our resources for x's</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>    <span style="color: #666666;">// our (old) resources get destroyed with x</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+<h3>Reality Bites</h3>
+
+<p>Of course, lunch is never really free, so I have a couple of caveats.</p>
+
+<p>First, when you pass parameters by reference and copy in the function
+body, the copy constructor is called from one central location.
+However, when you pass parameters by value, the compiler generates
+calls to the copy constructor at the site of <em>each</em> call where lvalue
+arguments are passed.  If the function will be called from many places
+and code size or locality are serious considerations for your
+application, it could have a real effect.</p>
+
+<p>On the other hand, it&#8217;s easy to build a wrapper function that
+localizes the copy:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> 
+sorted3<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> names<span style="color: #008000;">&##41;</span>
+<span style="color: #008000;">&#123;</span>
+    <span style="color: #666666;">// copy is generated once, at the site of this call</span>
+    <span style="color: #0000ff;">return</span> sorted<span style="color: #008000;">&#40;</span>names<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+<p>Since the converse doesn&#8217;t hold&#8212;you can&#8217;t get back a lost
+opportunity for copy elision by wrapping&#8212;I recommend you start by
+following the guideline, and make changes only as you find them to be
+necessary.</p>
+
+<div id="no-copy-elision-of-returned-parameter">
+
+<p>Second, I&#8217;ve yet to find a compiler that will elide the copy when a
+function parameter is returned, as in our implementation of <code>sorted</code>.
+When you think about how these elisions are done, it makes sense:
+without some form of inter-procedural optimization, the caller of
+<code>sorted</code> can&#8217;t know that the argument (and not some other object) will
+eventually be returned, so the compiler must allocate separate space on
+the stack for the argument and the return value.</p>
+
+<p>If you need to return a function parameter, you can still get
+near-optimal performance by swapping into a default-constructed return
+value (provided default construction and swap are cheap, as they
+should be):</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> 
+sorted<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> names<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    std<span style="color: #008080;">::</span><span style="color: #007788;">sort</span><span style="color: #008000;">&#40;</span>names<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> ret<span style="color: #008080;">;</span>
+    swap<span style="color: #008000;">&#40;</span>ret, names<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> ret<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+</div>
+
+<h3>More To Come</h3>
+
+<p>Hopefully you now have the ammunition you need to stave off anxiety
+about passing and returning nontrivial objects by value.  But we&#8217;re not
+done yet: now that we&#8217;ve covered rvalues, copy elision, and the <abbr title="Return Value Optimization">RVO</abbr>, we
+have all the background we need to attack move semantics, rvalue
+references, perfect forwarding, and more as we continue this article
+series.  See you soon!</p>
+
+<div class="admonition note">
+
+<p>Follow <a href="2-move-it-with-rvalue-references.html">this link</a> to the next installment.</p>
+
+</div>
+
+<h3>Acknowledgements</h3>
+
+<p>Howard Hinnant is responsible for key insights that make this article series possible.  Andrei Alexandrescu was posting on comp.lang.c++.moderated about how to leverage copy elision years before I took it seriously.  Most of all, though, thanks in general to all readers and reviewers!</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn:1">
+<p>Googling for a good definition of <em>value semantics</em> turned up
+  nothing for me.  Unless someone else can point to one (and maybe
+  even if they can), we&#8217;ll be running an article on that
+  topic&#8212;in which I promise you a definition&#8212;soon.&#160;<a href="#fnref:1" rev="footnote">&#8617;</a></p>
+</li>
+
+<li id="fn:saks">
+<p>For a detailed treatment of rvalues and lvalues, please see
+this excellent <a href="http://www.embedded.com/electronics-blogs/programming-pointers/4023341/Lvalues-and-Rvalues">article
+by DanSaks</a>&#160;<a href="#fnref:saks" rev="footnote">&#8617;</a></p>
+</li>
+
+<li id="fn:named">
+<p>Except for <code>enum</code>s, every value with a name is an lvalue.&#160;<a href="#fnref:named" rev="footnote">&#8617;</a></p>
+</li>
+
+</ol>
+</body>
+</html>
