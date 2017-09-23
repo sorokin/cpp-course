@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Making Your Next&nbsp;Move</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #f9f9f9;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .author
+      {
+        font-family:'Liberation Sans', sans-serif;
+        font-size: 10pt;
+        font-style: italic;
+      }
+    table {width: 100%;}
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+<body>
+    <div class="author">September 17th, 2009 by Dave Abrahams</div>
+
+        <div class="post-559 post type-post status-publish format-standard hentry category-value-semantics tag-semantics tag-value" id="post-559">
+            <h2 class="article_view_header">Making Your Next&nbsp;Move</h2>
+
+            <div class="entry">
+                <p>This is the third article in a series about efficient value types in
+C++.  In the <a href="1-want-speed-pass-by-value.html">previous
+installment</a>,
+we introduced C++0x rvalue references, described how to build a
+movable type, and showed how to explicitly take advantage of that
+movability.  Now we&#8217;ll look at another opportunity for move
+optimization and explore some new areas of the move
+landscape.<span id="more-559"></span></p>
+
+<h3>Resurrecting an Rvalue</h3>
+
+<p>Before we can discuss our next optimization, you need to know that an
+unnamed rvalue reference is an rvalue, but a <em>named</em> rvalue reference
+is an lvalue.  I&#8217;ll write that again so you can let it sink in:</p>
+
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+
+A named rvalue reference is an lvalue</div>
+
+<p>I realize that&#8217;s counterintuitive, but
+consider the following:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">int</span> g<span style="color: #008000;">&#40;</span>X <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>  <span style="color: #666666;">// logically non-mutating</span>
+<span style="color: #0000ff;">int</span> g<span style="color: #008000;">&#40;</span>X<span style="color: #000040;">&amp;&amp;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>       <span style="color: #666666;">// ditto, but moves from rvalues</span>
+&nbsp;
+<span style="color: #0000ff;">int</span> f<span style="color: #008000;">&#40;</span>X<span style="color: #000040;">&amp;&amp;</span> a<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    g<span style="color: #008000;">&#40;</span>a<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    g<span style="color: #008000;">&#40;</span>a<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<p>if <code>a</code> were treated as an rvalue inside <code>f</code>, the first call to <code>g</code>
+would move from <code>a</code>, and the second would see a modified <code>a</code>.  That is
+not just counter-intuitive; it violates the guarantee that calling g
+doesn&#8217;t visibly modify anything.  So a named rvalue reference is just
+like any other reference, and only unnamed rvalue references are
+treated specially.  To give the second call to <code>g</code> a chance to move,
+we&#8217;d have to rewrite <code>f</code> as follows:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #339900;">#include &lt;utility&gt; // for std::move</span>
+<span style="color: #0000ff;">int</span> f<span style="color: #008000;">&#40;</span>X<span style="color: #000040;">&amp;&amp;</span> a<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    g<span style="color: #008000;">&#40;</span>a<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    g<span style="color: #008000;">&#40;</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>a<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+<p>Recall that <code>std::move</code> doesn&#8217;t itself do any moving.  It merely
+converts its argument into an unnamed rvalue reference so that move
+optimizations can kick in.</p>
+
+<h3>Binary Operators</h3>
+
+<p>Move semantics can be especially great for optimizing the use of
+binary operators.  Consider the following code:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">class</span> Matrix
+<span style="color: #008000;">&#123;</span>
+     …
+     std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span><span style="color: #0000ff;">double</span><span style="color: #000080;">&gt;</span> storage<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span><span style="color: #008080;">;</span>
+&nbsp;
+Matrix operator<span style="color: #000040;">+</span><span style="color: #008000;">&#40;</span>Matrix <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> left, Matrix <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> right<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    Matrix result<span style="color: #008000;">&#40;</span>left<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    result <span style="color: #000040;">+</span><span style="color: #000080;">=</span> right<span style="color: #008080;">;</span>   <span style="color: #666666;">// delegates to +=</span>
+    <span style="color: #0000ff;">return</span> result<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span>
+Matrix a, b, c, d<span style="color: #008080;">;</span>
+…
+Matrix x <span style="color: #000080;">=</span> a <span style="color: #000040;">+</span> b <span style="color: #000040;">+</span> c <span style="color: #000040;">+</span> d<span style="color: #008080;">;</span></pre></div>
+
+
+
+<p>The <code>Matrix</code> copy constructor gets invoked every time <code>operator+</code> is
+called, to create <code>result</code>.  Therefore, even if RVO elides the copy of
+<code>result</code> when it is returned, the expression above makes three
+<code>Matrix</code> copies (one for each <code>+</code> in the expression), each of which
+constructs a large vector.  Copy elision allows one of these <code>result</code>
+matrices to be the same object as <code>x</code>, but the other two will need to
+be destroyed, which adds further expense.</p>
+
+<p>Now, it is possible to write <code>operator+</code> so that it does better on our
+expression, even in C++03:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #666666;">// Guess that the first argument is more likely to be an rvalue</span>
+Matrix operator<span style="color: #000040;">+</span><span style="color: #008000;">&#40;</span>Matrix x, Matrix <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> y<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    x <span style="color: #000040;">+</span><span style="color: #000080;">=</span> y<span style="color: #008080;">;</span>        <span style="color: #666666;">// x was passed by value, so steal its vector</span>
+    Matrix temp<span style="color: #008080;">;</span>   <span style="color: #666666;">// Compiler cannot RVO x, so</span>
+    swap<span style="color: #008000;">&#40;</span>x, temp<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #666666;">// make a new Matrix and swap</span>
+    <span style="color: #0000ff;">return</span> temp<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span>
+Matrix x <span style="color: #000080;">=</span> a <span style="color: #000040;">+</span> b <span style="color: #000040;">+</span> c <span style="color: #000040;">+</span> d<span style="color: #008080;">;</span></pre></div>
+
+
+
+<p>A compiler that elides copies wherever possible will do a near-optimal
+job with that implementation, making only one temporary and moving its
+contents directly into <code>x</code>.  However, aside from being ugly, it&#8217;s easy
+to foil our optimization:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">Matrix x <span style="color: #000080;">=</span> a <span style="color: #000040;">+</span> <span style="color: #008000;">&#40;</span>b <span style="color: #000040;">+</span> <span style="color: #008000;">&#40;</span>c <span style="color: #000040;">+</span> d<span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span></pre></div>
+
+
+
+<p>This is actually worse than we&#8217;d have done with a naive
+implementation: now the rvalues always appear on the right-hand side
+of the <code>+</code> operator, and are copied explicitly.  Lvalues always appear
+on the left-hand side, but are passed by value, and thus are copied
+implicitly with no hope of elision, so we make six expensive copies.</p>
+
+<p>With rvalue references, though, we can do a <em>reliably</em>
+optimal<sup id="fnref:expression-templates"><a href="#fn:expression-templates" rel="footnote">1</a></sup> job by adding overloads to the original
+implementation:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #666666;">// The &quot;usual implementation&quot;</span>
+Matrix operator<span style="color: #000040;">+</span><span style="color: #008000;">&#40;</span>Matrix <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> x, Matrix <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> y<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> Matrix temp <span style="color: #000080;">=</span> x<span style="color: #008080;">;</span> temp <span style="color: #000040;">+</span><span style="color: #000080;">=</span> y<span style="color: #008080;">;</span> <span style="color: #0000ff;">return</span> temp<span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span>
+&nbsp;
+<span style="color: #666666;">// --- Handle rvalues ---</span>
+&nbsp;
+Matrix operator<span style="color: #000040;">+</span><span style="color: #008000;">&#40;</span>Matrix<span style="color: #000040;">&amp;&amp;</span> temp, <span style="color: #0000ff;">const</span> Matrix<span style="color: #000040;">&amp;</span> y<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> temp <span style="color: #000040;">+</span><span style="color: #000080;">=</span> y<span style="color: #008080;">;</span> <span style="color: #0000ff;">return</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>temp<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span>
+&nbsp;
+Matrix operator<span style="color: #000040;">+</span><span style="color: #008000;">&#40;</span><span style="color: #0000ff;">const</span> Matrix<span style="color: #000040;">&amp;</span> x, Matrix<span style="color: #000040;">&amp;&amp;</span> temp<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> temp <span style="color: #000040;">+</span><span style="color: #000080;">=</span> x<span style="color: #008080;">;</span> <span style="color: #0000ff;">return</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>temp<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span>
+&nbsp;
+Matrix operator<span style="color: #000040;">+</span><span style="color: #008000;">&#40;</span>Matrix<span style="color: #000040;">&amp;&amp;</span> temp, Matrix<span style="color: #000040;">&amp;&amp;</span> y<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> temp <span style="color: #000040;">+</span><span style="color: #000080;">=</span> y<span style="color: #008080;">;</span> <span style="color: #0000ff;">return</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>temp<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<h3>Move-Only Types</h3>
+
+<p>Some types really shouldn&#8217;t be copied, but passing them by value,
+returning them from functions, and storing them in containers makes
+perfect sense.  One example you might be familiar with is
+<code>std::auto_ptr&lt;T&gt;</code>: you can invoke its copy constructor, but that
+doesn&#8217;t produce a copy.  Instead&#8230; it moves!  Now, moving from an
+lvalue with copy syntax is even worse for equational reasoning than
+reference semantics is.  What would it mean to sort a container of
+<code>auto_ptr</code>s if copying a value out of the container altered the
+original sequence?</p>
+
+<p>Because of these issues, the original standard explicitly outlawed the
+use of <code>auto_ptr</code> in standard containers, and it has been deprecated
+in C++0x.  Instead, we have a new type of smart pointer that can&#8217;t be
+copied, but can still move:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> T<span style="color: #000080;">&gt;</span>
+<span style="color: #0000ff;">struct</span> unique_ptr
+<span style="color: #008000;">&#123;</span>
+ <span style="color: #0000ff;">private</span><span style="color: #008080;">:</span>
+    unique_ptr<span style="color: #008000;">&#40;</span><span style="color: #0000ff;">const</span> unique_ptr<span style="color: #000040;">&amp;</span> p<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    unique_ptr<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span><span style="color: #0000ff;">const</span> unique_ptr<span style="color: #000040;">&amp;</span> p<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+ <span style="color: #0000ff;">public</span><span style="color: #008080;">:</span>
+    unique_ptr<span style="color: #008000;">&#40;</span>unique_ptr<span style="color: #000040;">&amp;&amp;</span> p<span style="color: #008000;">&#41;</span>
+      <span style="color: #008080;">:</span> ptr_<span style="color: #008000;">&#40;</span>p.<span style="color: #007788;">ptr_</span><span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> p.<span style="color: #007788;">ptr_</span> <span style="color: #000080;">=</span> <span style="color: #0000dd;">0</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span>
+&nbsp;
+    unique_ptr<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>unique_ptr<span style="color: #000040;">&amp;&amp;</span> p<span style="color: #008000;">&#41;</span>
+    <span style="color: #008000;">&#123;</span>
+        <span style="color: #0000dd;">delete</span> ptr_<span style="color: #008080;">;</span> ptr_ <span style="color: #000080;">=</span> p.<span style="color: #007788;">ptr_</span><span style="color: #008080;">;</span>
+        p.<span style="color: #007788;">ptr_</span> <span style="color: #000080;">=</span> <span style="color: #0000dd;">0</span><span style="color: #008080;">;</span>
+        <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>
+    <span style="color: #008000;">&#125;</span>
+<span style="color: #0000ff;">private</span><span style="color: #008080;">:</span> 
+    T<span style="color: #000040;">*</span> ptr_<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span><span style="color: #008080;">;</span></pre></div>
+
+
+
+<p>A <code>unique_ptr</code> can be placed in a standard container and can do all
+the things <code>auto_ptr</code> can do, <em>except</em> implicitly move from an
+lvalue.  If you want to move from an lvalue, you simply pass it
+through <code>std::move</code>:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">int</span> f<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">unique_ptr</span><span style="color: #000080;">&lt;</span>T<span style="color: #000080;">&gt;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>    <span style="color: #666666;">// accepts a move-only type by value</span>
+unique_ptr<span style="color: #000080;">&lt;</span>T<span style="color: #000080;">&gt;</span> x<span style="color: #008080;">;</span>              <span style="color: #666666;">// has a name so it's an lvalue</span>
+<span style="color: #0000ff;">int</span> a <span style="color: #000080;">=</span> f<span style="color: #008000;">&#40;</span> x <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>               <span style="color: #666666;">// error! (requires a copy of x)</span>
+<span style="color: #0000ff;">int</span> b <span style="color: #000080;">=</span> f<span style="color: #008000;">&#40;</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>x<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>    <span style="color: #666666;">// OK, explicit move</span></pre></div>
+
+
+
+<p>Other types that will be move-only in C++0x include stream types,
+threads and locks (from new mulithreading support), and any standard
+container holding move-only types.</p>
+
+<h3>C++Next Up</h3>
+
+<p>There&#8217;s still lots to cover.  Among other topics in this series, we&#8217;ll
+touch on exception safety, move assignment (again), perfect
+forwarding, and how to move in C++03.  Stay tuned!</p>
+
+<hr />
+
+<p>Please follow <a href="3-your-next-assignment.html">this link</a> to the
+next installment.</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn:expression-templates">
+<p>Technically, you can do <em>still better</em> with
+<a href="http://www.drdobbs.com/cpp/expression-templates/184401656">expression templates</a>, by delaying evaluation of the whole
+expression until assignment and adding all the matrices &#8220;in
+parallel,&#8221; making only one pass over the result.
+It would be interesting to know if there is a problem that has a
+truly optimal solution with rvalue references; one that can&#8217;t be
+improved upon by expression templates.&#160;<a href="#fnref:expression-templates" rev="footnote">&#8617;</a></p>
+</li>
+
+</ol>
+</div>
+        </div>
+
+
+</body>
+</html>

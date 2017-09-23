@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Onward,&nbsp;Forward!</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #f9f9f9;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .author
+      {
+        font-family:'Liberation Sans', sans-serif;
+        font-size: 10pt;
+        font-style: italic;
+      }
+    table {width: 100%;}
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+<body>
+        <div class="post-622 post type-post status-publish format-standard hentry category-value-semantics tag-semantics tag-value" id="post-622">
+            <h2 class="article_view_header">Onward,&nbsp;Forward!</h2>
+
+            <div class="entry">
+                <div class="hackadelic-series-info"><small>This entry is part of a series, <a href="javascript:;" class="hackadelic-sliderButton"onclick="toggleSlider('#hackadelic-sliderPanel-1')" title="click to expand/collapse slider RValue References: Moving Forward">RValue References: Moving Forward&raquo;</a> <span class="hackadelic-sliderPanel concealed" id="hackadelic-sliderPanel-1"></span></small></div><p>Besides providing move semantics, the other main application of rvalue
+references is in solving “<a
+href="/web/20140110115507/http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2002/n1385.htm">the
+forwarding problem</a>.” In this context, &#8220;forwarding&#8221; means passing a
+generic function&#8217;s actual argument on to a second function without
+rejecting any arguments that can be passed to that second function,
+without losing any information about the argument&#8217;s cv-qualification or
+l/rvalue-ness, and without overloading.  In C++03, the best
+approximations turn all rvalues into lvalues <em>and</em> require two
+overloads.<span id="more-622"></span></p>
+
+<h3>Why Solve This Problem?</h3>
+
+<p>Consider this example:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> F<span style="color: #000080;">&gt;</span>
+<span style="color: #0000ff;">struct</span> unary_function_wrapper
+<span style="color: #008000;">&#123;</span>
+     unary_function_wrapper<span style="color: #008000;">&#40;</span>F f<span style="color: #008000;">&#41;</span> <span style="color: #008080;">:</span> f<span style="color: #008000;">&#40;</span>f<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span><span style="color: #008000;">&#125;</span>
+&nbsp;
+     <span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> ArgumentType<span style="color: #000080;">&gt;</span>
+     <span style="color: #0000ff;">void</span> operator<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#40;</span> ArgumentType x <span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> f<span style="color: #008000;">&#40;</span>x<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span>
+ <span style="color: #0000ff;">private</span><span style="color: #008080;">:</span>
+     F f<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span><span style="color: #008080;">;</span></pre></div>
+
+
+That formulation doesn&#8217;t work because our pass-by-value function call
+operator rejects all non-copyable/non-movable types, even though <code>f</code>
+might accept them.  If we change the function to
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> ArgumentType<span style="color: #000080;">&gt;</span>
+<span style="color: #0000ff;">void</span> operator<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#40;</span> ArgumentType<span style="color: #000040;">&amp;</span> x <span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> f<span style="color: #008000;">&#40;</span>x<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span></pre></div>
+
+
+then we reject all non-const rvalues.  We could add an overload:
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> ArgumentType<span style="color: #000080;">&gt;</span>
+<span style="color: #0000ff;">void</span> operator<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#40;</span> ArgumentType<span style="color: #000040;">&amp;</span> x <span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> f<span style="color: #008000;">&#40;</span>x<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span>
+<span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> ArgumentType<span style="color: #000080;">&gt;</span>
+<span style="color: #0000ff;">void</span> operator<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#40;</span> ArgumentType <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> x <span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> f<span style="color: #008000;">&#40;</span>x<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span></pre></div>
+
+
+but like all the others, this one drops rvalueness, which we&#8217;d like to
+preserve so that <code>f</code> can take advantage of the move optimizations
+discussed in earlier articles.  The need to introduce a second
+overload poses an additional problem: it doesn&#8217;t scale tractably to
+more arguments.  A <code>binary_function_wrapper</code> would require four
+overloads, a <code>ternary_function_wrapper</code> would require eight, and in
+general, perfectly forwarding <em>n</em> arguments requires 2<em>ⁿ</em> overloads.
+
+<h3>A Solution That Works</h3>
+
+<p>With rvalue references, we can take advantage of some
+specially-designed language rules to solve the problem this way:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> ArgumentType<span style="color: #000080;">&gt;</span>
+<span style="color: #0000ff;">void</span> operator<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#40;</span> ArgumentType <span style="color: #000040;">&amp;&amp;</span> x <span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> f<span style="color: #008000;">&#40;</span> std<span style="color: #008080;">::</span><span style="color: #007788;">forward</span><span style="color: #000080;">&lt;</span>ArgumentType<span style="color: #000080;">&gt;</span><span style="color: #008000;">&#40;</span>x<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span></pre></div>
+
+
+The two special rules in question are:
+
+<ol>
+<li><p>A rule for collapsing rvalue references.  In C++0x, it was long ago
+decided that if <code>T</code> is <code>U&amp;</code>, then <code>T&amp;</code> is also <code>U&amp;</code>.
+That&#8217;s lvalue reference collapsing.  Here&#8217;s how the rules were
+updated for rvalue references:</p>
+
+<ul>
+<li><code>&amp;</code> + <code>&amp;</code> yields <code>&amp;</code></li>
+<li><code>&amp;</code> + <code>&amp;&amp;</code> yields <code>&amp;</code></li>
+<li><code>&amp;&amp;</code> + <code>&amp;</code> yields <code>&amp;</code></li>
+<li><code>&amp;&amp;</code> + <code>&amp;&amp;</code> yields <code>&amp;&amp;</code></li>
+</ul>
+
+<p>That is, any &#8220;lvalue-ness&#8221; at all makes the result into an lvalue.</p></li>
+<li><p>A rule for deducing &#8220;fully-generalized rvalue reference&#8221; parameters
+like <code>ArgumentType</code> above.  The rule says that if the actual
+argument is an rvalue, <code>ArgumentType</code> will be deduced to be a
+non-reference type, but if the actual argument is an lvalue,
+<code>ArgumentType</code> will be deduced to be an lvalue reference type.</p></li>
+</ol>
+
+<p>Here&#8217;s how these rules play out when the actual argument is
+an rvalue of type <code>Y</code>: <code>ArgumentType</code> is deduced to be <code>Y</code>, so
+there&#8217;s only one reference and no collapsing: the function parameter
+type is <code>Y&amp;&amp;</code>.</p>
+
+<p>When the actual argument is an lvalue of type <code>Y</code>, <code>ArgumentType</code>
+is deduced to be <code>Y&amp;</code> (or <code>Y const&amp;</code>) and the reference-collapsing
+rules kick in, making the instantiated function&#8217;s parameter type <code>Y&amp; &amp;&amp;</code> 
+or simply <code>Y&amp;</code>&#8230; which is consistent with binding to an
+lvalue.</p>
+
+<p>The final ingredient is the <code>forward</code> function, whose job is to
+&#8220;reconstitute&#8221; the actual argument&#8217;s rvalueness when <code>ArgumentType</code>
+is a non-reference and thus pass it on to <code>f</code> without interference.</p>
+
+<p>Like <code>std::move</code>, <code>std::forward</code> is a zero-overhead operation.
+Although it&#8217;s not an exact translation, you can think of
+<code>std::forward&lt;ArgumentType&gt;(x)</code> as a descriptive way to say
+<code>static_cast&lt;ArgumentType&amp;&amp;&gt;(x)</code>: when the actual argument is an
+rvalue, we cast <code>x</code> to an unnamed rvalue reference, but when the
+actual argument is an lvalue, <code>ArgumentType</code> is an lvalue reference
+and reference-collapsing kicks in, so the target of the
+<code>static_cast</code> is also an lvalue reference.</p>
+
+<h3>What does “<code>forward</code>” Really Mean?</h3>
+
+<p>Recently there&#8217;s been substantial disagreement about whether <code>forward</code>
+definition should be adjusted to accomodate uses other than &#8220;perfect
+forwarding,&#8221; e.g. to help with the move constructors of types such as
+<code>std::tuple</code>, which may contain reference members, and to prevent
+dangerous scenarios like binding lvalue references to members of an
+rvalue.  The proposed adjustments are usually described as helping in
+cases where you want to “forward an <code>X</code> as a <code>Y</code>.”  For details of these
+adjustments, see
+<a href="/web/20140110115507/http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2009/n2951.html">N2951</a>.</p>
+
+<p>I&#8217;ve never been comfortable with going in this direction because, while
+“<em>forward</em> a function&#8217;s argument, preserving <em>cv-qualification</em> and
+‘rvalue-ness&#8217;” makes perfect sense to me, “forward an <code>X</code> as a <code>Y</code>” has
+no obvious meaning.  In other words, there&#8217;s no obvious mental model for
+how the proposed <code>forward</code> should be used and what it&#8217;s for: we don&#8217;t
+have a <em>programming model</em> for it.  I eventually gave up resisting the
+changes because I could see that it was useful in practice for solving a
+class of related problems that some users will have to deal with, but I
+still think we need to figure out what it means, and how to explain that
+clearly.</p>
+<div id="hackadelic-sliderNote-1" class="concealed">Entries in this series:<ol><li><a href="/web/20140110115507/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value/">Want Speed? Pass by Value.</a></li><li><a href="/web/20140110115507/http://cpp-next.com/archive/2009/09/making-your-next-move/">Making Your Next Move</a></li><li><a href="/web/20140110115507/http://cpp-next.com/archive/2009/09/your-next-assignment/">Your Next Assignment...</a></li><li><a href="/web/20140110115507/http://cpp-next.com/archive/2009/10/exceptionally-moving/">Exceptionally Moving!</a></li><li>Onward, Forward!</li></ol><span style="display: block; margin-top: 3px; font-size: 7px"><a href="/web/20140110115507/http://hackadelic.com/solutions/wordpress/sliding-notes" title="Powered by Hackadelic Sliding Notes 1.6.5">Powered by Hackadelic Sliding Notes 1.6.5</a></span></div>
+                                
+                <div class="single_meta">
+                Posted Monday, December 7th, 2009 under <a href="/web/20140110115507/http://cpp-next.com/archive/category/value-semantics/" title="View all posts in Value Semantics" rel="category tag">Value Semantics</a>.<br/>
+                <div class="tags"><p>Tags: <a href="/web/20140110115507/http://cpp-next.com/archive/tag/semantics/" rel="tag">semantics</a>, <a href="/web/20140110115507/http://cpp-next.com/archive/tag/value/" rel="tag">value</a></p></div>
+        </div>
+            </div>
+        </div>
+
+</body>
+</html>

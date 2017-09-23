@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Exceptionally&nbsp;Moving!</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #f9f9f9;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .author
+      {
+        font-family:'Liberation Sans', sans-serif;
+        font-size: 10pt;
+        font-style: italic;
+      }
+    table {width: 100%;}
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+<body>
+    <div class="author">October 5th, 2009 by Dave Abrahams</div>
+        <div class="post-621 post type-post status-publish format-standard hentry category-value-semantics tag-semantics tag-value" id="post-621">
+            <h2 class="article_view_header">Exceptionally&nbsp;Moving!</h2>
+
+            <div class="entry">
+                <div class="hackadelic-series-info"><small>This entry is part of a series, <a href="javascript:;" class="hackadelic-sliderButton"onclick="toggleSlider('#hackadelic-sliderPanel-1')" title="click to expand/collapse slider RValue References: Moving Forward">RValue References: Moving Forward&raquo;</a> <span class="hackadelic-sliderPanel concealed" id="hackadelic-sliderPanel-1"></span></small></div><p><strong>update:</strong> we have posted <a href="/web/20140110122123/http://blip.tv/file/2702265">a slideset</a>
+  related to this article</p>
+
+<p><strong>update #2:</strong> If <a href="/web/20140110122123/http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2009/n2983.html">N2983</a> is accepted (as I hope and believe it
+  will be), some of the information in this article will be obsolete.
+  Please <a href="/web/20140110122123/http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2009/n2983.html">read it</a> if you want a complete picture of the issues
+  discussed here.<span id="more-621"></span></p>
+
+<p>Welcome to the fifth in our series of articles about efficient value
+types in C++.  In <a href="/web/20140110122123/http://cpp-next.com/archive/2009/09/your-next-assignment">our last
+episode</a>, we left our intrepid
+readers vigilantly searching for the optimal implementation of move
+assignment.  Today we&#8217;ll find our way through a tough neighborhood of
+Move City where perfectly ordinary types can clash in suprising ways.</p>
+
+<p>In an earlier posting, we saw that by offering <a href="/web/20140110122123/http://cpp-next.com/archive/2009/09/move-it-with-rvalue-references/#permission-to-move">permission to
+move</a>,
+one piece of code can work on both movable and non-movable types, taking
+advantage of move optimizations if and when they are available.  This
+&#8220;move if you can; copy if you must&#8221; approach is great for optimizing
+code while keeping it compatible with legacy types that haven&#8217;t yet got
+move constructors.  However, it puts a new burden on operations offering
+the strong guarantee.<sup id="fnref:strong"><a href="#fn:strong" rel="footnote">1</a></sup></p>
+
+<h3>Strong Guarantee, Strong Requirements</h3>
+
+<p>Achieving the strong guarantee requires partitioning the steps of an
+operation into two categories:</p>
+
+<div id="attachment_551" style="width: 369px" class="wp-caption alignright"><a href="/web/20140110122123/http://cpp-next.com/wp-content/uploads/2009/08/partition.png"><img src="/web/20140110122123im_/http://cpp-next.com/wp-content/uploads/2009/08/partition.png" alt="The strong guarantee depends on a partitioning of operations" title="partition" width="359" height="162" class="size-full wp-image-551" /></a><p class="wp-caption-text">The strong guarantee depends on a partitioning of operations</p></div>
+
+<ol>
+<li>Operations that may throw, but don&#8217;t do anything irreversible</li>
+<li>Operations that may be irreversible, but don&#8217;t throw.</li>
+</ol>
+
+<p>As long as we can break everything into those two categories, and
+everything in category 1 happens before everything in category 2,
+we&#8217;re home free.  A typical example occurs in C++03 when
+<code>vector::reserve()</code> has to allocate new element storage:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">void</span> reserve<span style="color: #008000;">&#40;</span>size_type n<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    <span style="color: #0000ff;">if</span> <span style="color: #008000;">&#40;</span>n <span style="color: #000080;">&gt;</span> this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>capacity<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span>
+    <span style="color: #008000;">&#123;</span>
+        pointer new_begin <span style="color: #000080;">=</span> this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>allocate<span style="color: #008000;">&#40;</span> n <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+        size_type s <span style="color: #000080;">=</span> this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>size<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span>, i <span style="color: #000080;">=</span> <span style="color: #0000dd;">0</span><span style="color: #008080;">;</span>
+        <span style="color: #0000ff;">try</span>
+        <span style="color: #008000;">&#123;</span>
+            <span style="color: #666666;">// copy to new storage: can throw; doesn't modify *this</span>
+            <span style="color: #0000ff;">for</span> <span style="color: #008000;">&#40;</span><span style="color: #008080;">;</span>i <span style="color: #000080;">&lt;</span> s<span style="color: #008080;">;</span> <span style="color: #000040;">++</span>i<span style="color: #008000;">&#41;</span>
+                 <span style="color: #0000dd;">new</span> <span style="color: #008000;">&#40;</span><span style="color: #008000;">&#40;</span><span style="color: #0000ff;">void</span><span style="color: #000040;">*</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#40;</span>new_begin <span style="color: #000040;">+</span> i<span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span> value_type<span style="color: #008000;">&#40;</span> <span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#91;</span>i<span style="color: #008000;">&#93;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+        <span style="color: #008000;">&#125;</span>
+        <span style="color: #0000ff;">catch</span><span style="color: #008000;">&#40;</span>...<span style="color: #008000;">&#41;</span>
+        <span style="color: #008000;">&#123;</span>
+            <span style="color: #0000ff;">while</span> <span style="color: #008000;">&#40;</span>i <span style="color: #000080;">&gt;</span> <span style="color: #0000dd;">0</span><span style="color: #008000;">&#41;</span>                 <span style="color: #666666;">// clean up new elements</span>
+               <span style="color: #008000;">&#40;</span>new_begin <span style="color: #000040;">+</span> <span style="color: #000040;">--</span>i<span style="color: #008000;">&#41;</span><span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>~value_type<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+&nbsp;
+            this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>deallocate<span style="color: #008000;">&#40;</span> new_begin <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>    <span style="color: #666666;">// release storage</span>
+            <span style="color: #0000ff;">throw</span><span style="color: #008080;">;</span>
+        <span style="color: #008000;">&#125;</span>
+        <span style="color: #666666;">// -------- irreversible mutation starts here -----------</span>
+        this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>deallocate<span style="color: #008000;">&#40;</span> this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>begin_ <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+        this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>begin_ <span style="color: #000080;">=</span> new_begin<span style="color: #008080;">;</span>
+        this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>end_ <span style="color: #000080;">=</span> new_begin <span style="color: #000040;">+</span> s<span style="color: #008080;">;</span>
+        this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>cap_ <span style="color: #000080;">=</span> new_begin <span style="color: #000040;">+</span> n<span style="color: #008080;">;</span>
+    <span style="color: #008000;">&#125;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<p>In a move-enabled implementation, we&#8217;d add an explicit call to
+<code>std::move</code> in the <code>try</code> block, changing the loop to:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">for</span> <span style="color: #008000;">&#40;</span><span style="color: #008080;">;</span>i <span style="color: #000080;">&lt;</span> s<span style="color: #008080;">;</span> <span style="color: #000040;">++</span>i<span style="color: #008000;">&#41;</span>
+     <span style="color: #0000dd;">new</span> <span style="color: #008000;">&#40;</span><span style="color: #008000;">&#40;</span><span style="color: #0000ff;">void</span><span style="color: #000040;">*</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#40;</span>new_begin <span style="color: #000040;">+</span> i<span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span> value_type<span style="color: #008000;">&#40;</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span> <span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#91;</span>i<span style="color: #008000;">&#93;</span> <span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span></pre></div>
+
+
+
+<p>The interesting thing about this change is that, when <code>value_type</code>
+is move-enabled, the loop <em>does</em> modify <code>*this</code> (an explicit request
+to move from an lvalue is a logically-mutating operation).</p>
+
+<div id="attachment_552" style="width: 323px" class="wp-caption alignright"><a href="/web/20140110122123/http://cpp-next.com/wp-content/uploads/2009/08/throwing-move.png"><img src="/web/20140110122123im_/http://cpp-next.com/wp-content/uploads/2009/08/throwing-move.png" alt="A move that might throw can&#039;t be rolled back without potentially throwing again" title="throwing-move" width="313" height="166" class="size-full wp-image-552" /></a><p class="wp-caption-text">A move that might throw can't be rolled back without potentially throwing again</p></div>
+
+<p>Now, if the move operation can throw an exception, the loop makes an
+irreversible change, because rolling back a partially-completed loop
+would require more move operations.  Therefore, to preserve the strong
+guarantee when <code>value_type</code> is move-enabled, its move constructor
+must not throw.</p>
+
+<h3>Upshot</h3>
+
+<p>The draft C++0x standard essentially outlaws
+throwing move constructors,<sup id="fnref:no-throwing-move"><a href="#fn:no-throwing-move" rel="footnote">2</a></sup> and we
+suggest that you follow that rule.  However, the rule that
+move constructors must not throw isn&#8217;t always easy to follow.  Take,
+for example, <code>std::pair&lt;std::string,UserType&gt;</code>, where <code>UserType</code>
+is some class with a throwing copy constructor.  In C++03, this type
+is well-behaved and can be placed in a <code>std::vector</code>.  In C++0x,
+however, <code>std::string</code> acquires a move constructor, and so
+does <code>std::pair</code>:</p>
+
+
+<table><tr><td class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> FirstType, <span style="color: #0000ff;">class</span> SecondType<span style="color: #000080;">&gt;</span>
+pair<span style="color: #000080;">&lt;</span>FirstType,SecondType<span style="color: #000080;">&gt;</span><span style="color: #008080;">::</span><span style="color: #007788;">pair</span><span style="color: #008000;">&#40;</span>pair<span style="color: #000040;">&amp;&amp;</span> x<span style="color: #008000;">&#41;</span>
+  <span style="color: #008080;">:</span> first<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>x.<span style="color: #007788;">first</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span>
+  , second<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>x.<span style="color: #007788;">second</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span><span style="color: #008000;">&#125;</span></pre></td></tr></table>
+
+
+<p>&#8230;and here we have a problem.  <code>Second</code> is <code>UserType</code>, a type with
+no move constructor, which means the construction of <code>second</code> above
+is a (throwing) copy, rather than a move.  So
+<code>pair&lt;std::string,UserType&gt;</code> has acquired a throwing move
+constructor, and can no longer be used in a <code>std::vector</code> without
+breaking the strong guarantee.</p>
+
+<p>Today, that means we&#8217;ll need something like the
+following code to make <code>pair</code> work.</p>
+
+<div id="pair-move">
+
+<div class="codeblock"><pre lang="cpp" class="1">
+template &lt;class T1, class T2&gt;
+pair(pair&lt;T1,T2&gt;&#038;&#038; rhs
+  , typename enable_if&lt;                 // Undocumented optional
+        mpl::and_&lt;                      // argument, not part of the
+            boost::has_nothrow_move&lt;T1> // public interface of pair.
+          , boost::has_nothrow_move&lt;T2>
+        >
+     >::type* = 0
+)
+  : first(std::move(rhs.first)),
+    second(std::move(rhs.second))
+{};</pre></div>
+
+</div>
+
+<p>The use of <a href="/web/20140110122123/http://boost.org/libs/utility/enable_if.html"><code>enable_if</code></a>
+causes this constructor to &#8220;disappear&#8221; unless <code>has_nothrow_move</code> yields
+<code>true</code> for both <code>T1</code> <em>and</em> <code>T2</code>.</p>
+
+<p>As far as we know, there&#8217;s no way to detect the presence of a move
+constructor, much less a nonthrowing one, so until we get some new
+language features, <code>boost::has_nothrow_move</code> is going to be one of
+those imperfect traits that reports <code>false</code> for user-defined types
+unless you specialize it.  So, whenever you write a move constructor,
+it should be accompanied by a specialization of this trait.  For
+example, if we added move constructors to <code>std::vector</code> and
+<code>std::pair</code>, we&#8217;d also add:</p>
+
+
+<table><tr><td class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">namespace</span> boost
+<span style="color: #008000;">&#123;</span>
+    <span style="color: #666666;">// All vectors have a (nothrow) move constructor</span>
+    <span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> T, <span style="color: #0000ff;">class</span> A<span style="color: #000080;">&gt;</span>
+    <span style="color: #0000ff;">struct</span> has_nothrow_move<span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>T,A<span style="color: #000080;">&gt;</span> <span style="color: #000080;">&gt;</span> <span style="color: #008080;">:</span> true_type <span style="color: #008000;">&#123;</span><span style="color: #008000;">&#125;</span><span style="color: #008080;">;</span>
+&nbsp;
+    <span style="color: #666666;">// A pair has a (nothrow) move constructor iff both its</span>
+    <span style="color: #666666;">// members do as well.</span>
+    <span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> First, <span style="color: #0000ff;">class</span> Second<span style="color: #000080;">&gt;</span>
+    <span style="color: #0000ff;">struct</span> has_nothrow_move<span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">pair</span><span style="color: #000080;">&lt;</span>First,Second<span style="color: #000080;">&gt;</span> <span style="color: #000080;">&gt;</span>
+      <span style="color: #008080;">:</span> mpl<span style="color: #008080;">::</span><span style="color: #007788;">and_</span><span style="color: #000080;">&lt;</span>
+           boost<span style="color: #008080;">::</span><span style="color: #007788;">has_nothrow_move</span><span style="color: #000080;">&lt;</span>First<span style="color: #000080;">&gt;</span>
+         , boost<span style="color: #008080;">::</span><span style="color: #007788;">has_nothrow_move</span><span style="color: #000080;">&lt;</span>Second<span style="color: #000080;">&gt;</span>
+        <span style="color: #000080;">&gt;</span> <span style="color: #008000;">&#123;</span><span style="color: #008000;">&#125;</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></td></tr></table>
+
+
+<p>We admit this is all pretty awful.  The C++ committee is still
+discussing the details of how to solve this problem, but a few things
+are generally agreed:</p>
+
+<ul>
+<li>We can&#8217;t break existing code by silently dropping the strong
+guarantee.</li>
+<li>The problem can be made much smaller by generating default move
+constructors&#8212;as suggested by Bjarne Stroustrup in <a href="/web/20140110122123/http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2009/n2904.pdf">N2904</a>&#8212;when appropriate.  That will fix the problem for <code>pair</code> and a whole host of
+types like it, not to mention speeding up some code &#8220;for free&#8221; by
+adding generated move optimization.</li>
+<li>There are still types for which we&#8217;ll need to deal with this issue &#8220;manually.&#8221;</li>
+</ul>
+
+<h3>The &#8220;Problem Types&#8221;</h3>
+
+<p>Types in the problem category typically have <em>some</em> sub-objects we&#8217;d
+like to move&#8212;provided that can be done safely&#8212;and others with which
+we need to &#8220;do something else.&#8221;  One example is <code>std::vector</code>, which
+contains an allocator whose copy constructor can throw exceptions:</p>
+
+<div class="codeblock"><pre lang="cpp" class="1">
+vector(vector&#038;&#038; rhs)
+  : _alloc( std::move(rhs._alloc) )
+  , _begin( rhs._begin )
+  , _end( rhs._end )
+  , _cap( rhs._cap )
+{
+    // "something else"
+    rhs._begin = rhs._end = rhs._cap = 0;
+}</pre></div>
+
+<p>A straight member-wise move, like the one generated by default under
+<a href="/web/20140110122123/http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2009/n2904.pdf">N2904</a>, wouldn&#8217;t have the right semantics here.  In particular, it
+wouldn&#8217;t zero-out the <code>_begin</code>, <code>_end</code>, and <code>_cap</code> members of <code>rhs</code>.
+However, if <code>rhs._alloc</code> doesn&#8217;t have a nonthrowing move
+constructor, it will be copied in line 2.  If that copy can throw, <code>vector</code>
+has acquired a throwing move constructor.<sup id="fnref:ugly-fix"><a href="#fn:ugly-fix" rel="footnote">3</a></sup></p>
+
+<p>The challenge for the language designers is to avoid asking the user to
+supply the same information twice.  Having to specify
+the types of the members that will be moved in the move constructor&#8217;s
+signature (lines 5 and 6 in the <code>pair</code> move constructor
+<a href="#pair-move">above</a>) and then actually <em>move</em> those members in the
+constructor&#8217;s member initialization list (lines 10 and 11).  One
+possibility under discussion is to use the new attribute syntax, so 
+<code>vector</code>&#8216;s move constructor might be written this
+way:</p>
+
+
+<table><tr><td class="codeblock"><pre class="cpp" style="font-family:monospace;">vector<span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rhs<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#91;</span><span style="color: #008000;">&#91;</span>moves<span style="color: #008000;">&#40;</span>_alloc<span style="color: #008000;">&#41;</span><span style="color: #008000;">&#93;</span><span style="color: #008000;">&#93;</span>
+  <span style="color: #008080;">:</span> _begin<span style="color: #008000;">&#40;</span> rhs._begin <span style="color: #008000;">&#41;</span>
+  , _end<span style="color: #008000;">&#40;</span> rhs._end <span style="color: #008000;">&#41;</span>
+  , _cap<span style="color: #008000;">&#40;</span> rhs._cap <span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    rhs._begin <span style="color: #000080;">=</span> rhs._end <span style="color: #000080;">=</span> rhs._cap <span style="color: #000080;">=</span> <span style="color: #0000dd;">0</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></td></tr></table>
+
+
+<p>That constructor would be
+&#8220;<a href="/web/20140110122123/http://en.wikipedia.org/wiki/Substitution_failure_is_not_an_error">SFINAE</a>&#8216;d
+out&#8221; unless <code>_alloc</code> itself has a nonthrowing move constructor, and
+that member would be implicitly initialized by moving from the
+corresponding member of <code>rhs</code>.</p>
+
+<p>Unfortunately, there has been some disagreement over the proper role of
+attributes in C++0x, so we still don&#8217;t know what syntax the committee
+will settle on, but at least we think we understand the problem in
+principle, and how to address it.</p>
+
+<h3>Ramblin&#8217; On</h3>
+
+<p>Well, thanks for reading; that&#8217;s it for today.  Next in this series
+we&#8217;ll discuss perfect forwarding, and we haven&#8217;t forgotten that we owe
+you a survey of C++03 move emulations.</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn:strong">
+<p>The strong guarantee says that if an exception is thrown,
+there are no effects&#160;<a href="#fnref:strong" rev="footnote">&#8617;</a></p>
+</li>
+
+<li id="fn:no-throwing-move">
+<p>More precisely, it says that if a move constructor throws during a standard library operation, the behavior is undefined.&#160;<a href="#fnref:no-throwing-move" rev="footnote">&#8617;</a></p>
+</li>
+
+<li id="fn:ugly-fix">
+<p>Fixing the exeception-safety of <code>vector</code>&#8216;s move constructor becomes even more
+involved than fixing <code>pair</code>&#8216;s, which is already templatized.  Since
+<code>enable_if</code> requires a templated function in order to take effect, we
+end up with a signature like this one:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> T2, <span style="color: #0000ff;">class</span> A2<span style="color: #000080;">&gt;</span>
+vector<span style="color: #008000;">&#40;</span>
+  vector<span style="color: #000080;">&lt;</span>T2,A2<span style="color: #000080;">&gt;</span><span style="color: #000040;">&amp;&amp;</span> rhs,
+  boost<span style="color: #008080;">::</span><span style="color: #007788;">enable_if</span><span style="color: #000080;">&lt;</span>
+      mpl<span style="color: #008080;">::</span><span style="color: #007788;">and_</span><span style="color: #000080;">&lt;</span>
+          boost<span style="color: #008080;">::</span><span style="color: #007788;">is_same</span><span style="color: #000080;">&lt;</span>T,T2<span style="color: #000080;">&gt;</span>
+        , boost<span style="color: #008080;">::</span><span style="color: #007788;">is_same</span><span style="color: #000080;">&lt;</span>A,A2<span style="color: #000080;">&gt;</span>
+        , has_nothrow_move<span style="color: #000080;">&lt;</span>A<span style="color: #000080;">&gt;</span>
+      <span style="color: #000080;">&gt;</span>
+  <span style="color: #000080;">&gt;</span><span style="color: #000040;">*</span> <span style="color: #000080;">=</span> <span style="color: #0000dd;">0</span>
+<span style="color: #008000;">&#41;</span></pre></div>
+
+
+
+<p><a href="#fnref:ugly-fix" rev="footnote">&#8617;</a></p>
+</li>
+
+</ol>
+</div>
+<div id="hackadelic-sliderNote-1" class="concealed">Entries in this series:<ol><li><a href="/web/20140110122123/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value/">Want Speed? Pass by Value.</a></li><li><a href="/web/20140110122123/http://cpp-next.com/archive/2009/09/making-your-next-move/">Making Your Next Move</a></li><li><a href="/web/20140110122123/http://cpp-next.com/archive/2009/09/your-next-assignment/">Your Next Assignment...</a></li><li>Exceptionally Moving!</li><li><a href="/web/20140110122123/http://cpp-next.com/archive/2009/12/onward-forward/">Onward, Forward!</a></li></ol><span style="display: block; margin-top: 3px; font-size: 7px"><a href="/web/20140110122123/http://hackadelic.com/solutions/wordpress/sliding-notes" title="Powered by Hackadelic Sliding Notes 1.6.5">Powered by Hackadelic Sliding Notes 1.6.5</a></span></div>
+                                
+                <div class="single_meta">
+                Posted Monday, October 5th, 2009 under <a href="/web/20140110122123/http://cpp-next.com/archive/category/value-semantics/" title="View all posts in Value Semantics" rel="category tag">Value Semantics</a>.<br/>
+                <div class="tags"><p>Tags: <a href="/web/20140110122123/http://cpp-next.com/archive/tag/semantics/" rel="tag">semantics</a>, <a href="/web/20140110122123/http://cpp-next.com/archive/tag/value/" rel="tag">value</a></p></div>
+        </div>
+            </div>
+        </div>
+</body>
+</html>

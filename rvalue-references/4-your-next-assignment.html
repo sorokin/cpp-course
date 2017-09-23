@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Your Next&nbsp;Assignment&#8230;</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #f9f9f9;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .author
+      {
+        font-family:'Liberation Sans', sans-serif;
+        font-size: 10pt;
+        font-style: italic;
+      }
+    table {width: 100%;}
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+<body>
+    <div class="author">September 28th, 2009 by Dave Abrahams</div>
+            <h2 class="article_view_header">Your Next&nbsp;Assignment&#8230;</h2>
+
+            <div class="entry">
+                <p>This is the fourth article in a series about efficient value types in
+C++.  In the <a href="/web/20140111132021/http://cpp-next.com/archive/2009/09/making-your-move/">previous
+installment</a>, we
+discussed how to deal with rvalue reference function parameters and
+introduced move-only types.  Here, we&#8217;ll revisit move assignment and see
+how to write it both correctly and efficiently.</p>
+
+<p>There&#8217;s a subtle problem hiding in <a href="/web/20140111132021/http://cpp-next.com/archive/2009/09/move-it-with-rvalue-references/#naive-vector-move-assignment">the <code>vector</code> move assignment
+implementation</a>
+we showed in <a href="/web/20140111132021/http://cpp-next.com/archive/2009/09/move-it-with-rvalue-references/">this series&#8217; second
+installment</a>.
+Take this code for example:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">mutex m1, m2<span style="color: #008080;">;</span>
+std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>shared_ptr<span style="color: #000080;">&lt;</span>lock<span style="color: #000080;">&gt;</span> <span style="color: #000080;">&gt;</span> v1, v2<span style="color: #008080;">;</span>
+v1.<span style="color: #007788;">push_back</span><span style="color: #008000;">&#40;</span>shared_ptr<span style="color: #000080;">&lt;</span>lock<span style="color: #000080;">&gt;</span><span style="color: #008000;">&#40;</span><span style="color: #0000dd;">new</span> lock<span style="color: #008000;">&#40;</span>m1<span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+v2.<span style="color: #007788;">push_back</span><span style="color: #008000;">&#40;</span>shared_ptr<span style="color: #000080;">&lt;</span>lock<span style="color: #000080;">&gt;</span><span style="color: #008000;">&#40;</span><span style="color: #0000dd;">new</span> lock<span style="color: #008000;">&#40;</span>m2<span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+v2 <span style="color: #000080;">=</span> v1<span style="color: #008080;">;</span>              <span style="color: #666666;">// #1</span>
+…
+v2 <span style="color: #000080;">=</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>v1<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>   <span style="color: #666666;">// #2 - Done with v1 now, so I can move it</span>
+…</pre></div>
+
+
+
+<p>Assignment #1 above releases all the locks held exclusively by <code>v2</code>
+(and makes <code>v2</code> co-owner of everything <code>v1</code> owns).  Assignment #2,
+however, has no immediate effect other than swapping lock ownership.
+In case #2, the locks originally held by <code>v2</code> aren&#8217;t released until
+<code>v1</code> goes out of scope, which could be much, much later.  Getting
+locking and unlocking order right can make the difference between a
+correct multithreaded program and a deadlock, so this is a serious
+issue<span id="more-624"></span>, and our <a href="/web/20140111132021/http://cpp-next.com/archive/2009/09/move-it-with-rvalue-references/#job">previous
+description</a>
+description of the responsibilities of move assignment needs to be
+amended:</p>
+
+<div class="admonition" id="semantics-of-move-construction-assignment">
+
+<p class="admonition-title">The Semantics of Move Assignment</p>
+
+<p>A move assignment operator &#8220;steals&#8221;
+the value of its argument, leaving that argument in a destructible
+and assignable state, and <em>preserves any user-visible side-effects on
+the left-hand-side</em>.</p>
+
+</div>
+
+<p>Armed with that guideline, we can now correct our implementation of move
+assignment for <code>std::vector</code>:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">vector<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rhs<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> 
+    this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>clear<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    std<span style="color: #008080;">::</span><span style="color: #007788;">swap</span><span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span>, rhs<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<p>It turns out that in practice, the eager <code>clear()</code> tends to have no
+effect (and thus no cost) because a target of move assignment is often
+<em>already</em> empty, having itself just been the source object in an earlier
+move.  That is certainly true of most of the standard algorithms and of
+the insertion sort we&#8217;ve been using as an example.  However, adding the
+<code>clear()</code> saves our butts when move assigning into a nonempty left-hand
+side.</p>
+
+<h3>Canonical Assignment?</h3>
+
+<p>As noted in the previous article, there is a pretty good &#8220;canonical
+implementation&#8221; of copy assignment based on a copy construction and a
+swap:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">T<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>T rhs<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> swap<span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span>, rhs<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<p>Among its nice properties, it:</p>
+
+<ul>
+<li>is easy to write correctly</li>
+<li>hugely reduces complexity compared with &#8220;doing it manually&#8221;</li>
+<li><a href="/web/20140111132021/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value/#implications">takes advantage of copy elision</a></li>
+<li>offers the strong guarantee if <code>swap</code> is non-throwing</li>
+</ul>
+
+<p>Provided you&#8217;ve implemented move construction and a cheap,
+non-throwing swap, the above also <em>looks</em> like a decent move
+assignment operator.  An rvalue argument will be <em>move-</em>constructed into
+<code>x</code> and then swapped into <code>*this</code>.  Slick!  If you&#8217;ve used the
+canonical copy assignment operator, you might not need to write a move
+assignment operator at all.</p>
+
+<p>That said, even back in the C++03 world, the &#8220;canonical
+implementation&#8221; often copies from lvalues too eagerly.  In the case of
+<code>std::vector</code>, there may be enough capacity on the left-hand side of
+the assignment operator to simply destroy the existing elements and
+copy all the elements from the right-hand side, thus avoiding an
+expensive allocation and, if the source vector is large, a serious
+spike in memory usage.</p>
+
+<p>So, std::vector uses a more economical assignment operator with the
+signature <code>vector&amp; operator=(vector const&amp;)</code>, which allows it to delay
+copying lvalue arguments until it can be sure a copy is needed.
+Unfortunately, if we <em>also</em> tried to keep the canonical copy assignment
+signature around for use with rvalue arguments, the overloads would be
+ambiguous.  Instead, we&#8217;d need to resort to something like this, which
+is equivalent but moves the creation of the temporary <em>inside</em> the
+assignment operator:</p>
+
+<div id="canonical-move">
+
+
+<table><tr><td class="line_numbers"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="codeblock"><pre class="cpp" style="font-family:monospace;">vector<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rhs<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    vector<span style="color: #008000;">&#40;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>rhs<span style="color: #008000;">&#41;</span><span style="color: #008000;">&#41;</span>
+      .<span style="color: #007788;">swap</span><span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></td></tr></table>
+
+
+
+</div>
+
+<p>The above actually does seem to be a generic implementation of the
+<a href="#semantics-of-move-construction-assignment">semantics of move
+assignment</a>, but there&#8217;s
+another problem here.  Let&#8217;s count the total cost of the operations:</p>
+
+<ul>
+<li>line 3: three loads and four to six stores to memory (depending on implementation)</li>
+<li>line 4: six loads and six stores to memory</li>
+<li>line 6: destruction of original contents of <code>*this</code></li>
+</ul>
+
+<p>Now compare with the &#8220;clear, then swap&#8221; implementation:</p>
+
+<div id="clear-swap">
+
+
+<table><tr><td class="line_numbers"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="codeblock"><pre class="cpp" style="font-family:monospace;">vector<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rhs<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> 
+    this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>clear<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    std<span style="color: #008080;">::</span><span style="color: #007788;">swap</span><span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span>, rhs<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></td></tr></table>
+
+
+
+</div>
+
+<ul>
+<li>line 3: destruction of original contents of <code>*this</code></li>
+<li>line 4: six loads and six stores to memory</li>
+</ul>
+
+<p>Recall that earlier we noted that the left-hand side of many (perhaps
+even most) move assignments is an object that has just been moved
+from.  In that common case, the cost of destroying the original
+contents of <code>*this</code>&#8212;whether via <code>clear</code> or via the destruction of a
+temporary&#8212;is just the cost of a single test and branch.  Therefore,
+the other operations account for most of the cost, and the &#8220;clear,
+then swap&#8221; implementation could be nearly twice as fast as the other
+one.</p>
+
+<p>In fact, we might actually do better.  Yes, the <code>swap</code> theoretically
+allows us to recycle the old capacity of the left-hand side rather
+than eagerly disposing of it, but when will that actually matter?
+Only when assigning from an lvalue that&#8217;s been <code>std::move</code>&#8216;d, since
+real rvalues are about to be destroyed.  And how often will the
+left-hand side actually have any capacity to offer?  Not often, since
+it&#8217;s usually an object that has just been moved-from.  So an
+implementation like this might actually be the most efficient of all:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">vector<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rhs<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> 
+    <span style="color: #0000ff;">if</span> <span style="color: #008000;">&#40;</span>this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>begin_<span style="color: #008000;">&#41;</span>
+    <span style="color: #008000;">&#123;</span>
+        this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>destroy_all<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #666666;">// destroy all elements</span>
+        this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>deallocate<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>  <span style="color: #666666;">// deallocate memory buffer</span>
+    <span style="color: #008000;">&#125;</span>
+    this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>begin_ <span style="color: #000080;">=</span> rhs.<span style="color: #007788;">begin_</span><span style="color: #008080;">;</span>
+    this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>end_ <span style="color: #000080;">=</span> rhs.<span style="color: #007788;">end_</span><span style="color: #008080;">;</span>
+    this<span style="color: #000040;">-</span><span style="color: #000080;">&gt;</span>cap_ <span style="color: #000080;">=</span> rhs.<span style="color: #007788;">cap_</span><span style="color: #008080;">;</span>
+    rhs.<span style="color: #007788;">begin_</span> <span style="color: #000080;">=</span> rhs.<span style="color: #007788;">end_</span> <span style="color: #000080;">=</span> rhs.<span style="color: #007788;">cap_</span> <span style="color: #000080;">=</span> <span style="color: #0000dd;">0</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<h3>Enough Speculation.  Show Me Numbers!</h3>
+
+<div id="attachment_668" style="width: 398px" class="wp-caption alignleft"><a href="/web/20140111132021/http://cpp-next.com/wp-content/uploads/2009/11/vec-move.png"><img src="/web/20140111132021im_/http://cpp-next.com/wp-content/uploads/2009/11/vec-move.png" alt="Vector Move Assignment Implementations" title="Vector Move Assignment Implementations" width="388" height="328" class="size-full wp-image-668" /></a><p class="wp-caption-text">Vector Move Assignment Implementations</p></div>
+
+<p>In case you&#8217;re wondering how this stuff plays out in practice, I used <a href="/web/20140111132021/http://cpp-next.com/wp-content/uploads/2009/11/canonical-assign.cpp">this test
+file</a>
+to probe the additional speedups available not just by implementing move
+assignment, but by relentlessly optimizing it.  The test uses a
+move-enabled <code>std::rotate</code> on a sequence of simplified <code>std::vector</code>s
+and <code>boost::array</code>s.  As you can see, for <code>std::vector</code>, the
+<a href="#canonical-move">&#8220;canonical&#8221; move assignment</a> implementation is
+actually a bit better than the <a href="#clear-swap">&#8220;clear, swap&#8221;</a>
+implementation, but assiduously minimizing the operations involved
+produces move assignment that&#8217;s faster still.</p>
+
+<div id="attachment_669" style="width: 371px" class="wp-caption alignright"><a href="/web/20140111132021/http://cpp-next.com/wp-content/uploads/2009/11/array-move.png"><img src="/web/20140111132021im_/http://cpp-next.com/wp-content/uploads/2009/11/array-move.png" alt="Array move assignment implementations" title="Array move assignment implementations" width="361" height="312" class="size-full wp-image-669" /></a><p class="wp-caption-text">Array move assignment implementations</p></div>
+
+<p>For <code>boost::array</code> (and, one would assume, similar structures like
+<code>boost::tuple</code>), it turns out that using <code>swap</code> is almost three times
+slower than even the simplest element-by-element move implementation,
+and with careful optimization we can do better still.</p>
+
+<p>So, the moral of this story is: be wary of formulaic implementations of
+move operations; remember that move semantics is all about
+optimization, so move operations tend to be very fast, and a few
+cycles here and there <em>can</em> make a significant difference.</p>
+
+<h3>Coming Up Next</h3>
+
+<p>In the series&#8217; next installment, we&#8217;ll explore the gnarly world of
+exception-safe move constructors.  Stay tuned&#8230;</p>
+<div id="hackadelic-sliderNote-1" class="concealed">Entries in this series:<ol><li><a href="/web/20140111132021/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value/">Want Speed? Pass by Value.</a></li><li><a href="/web/20140111132021/http://cpp-next.com/archive/2009/09/making-your-next-move/">Making Your Next Move</a></li><li>Your Next Assignment...</li><li><a href="/web/20140111132021/http://cpp-next.com/archive/2009/10/exceptionally-moving/">Exceptionally Moving!</a></li><li><a href="/web/20140111132021/http://cpp-next.com/archive/2009/12/onward-forward/">Onward, Forward!</a></li></ol><span style="display: block; margin-top: 3px; font-size: 7px"><a href="/web/20140111132021/http://hackadelic.com/solutions/wordpress/sliding-notes" title="Powered by Hackadelic Sliding Notes 1.6.5">Powered by Hackadelic Sliding Notes 1.6.5</a></span></div>
+                                
+                <div class="single_meta">
+                Posted Monday, September 28th, 2009 under <a href="/web/20140111132021/http://cpp-next.com/archive/category/value-semantics/" title="View all posts in Value Semantics" rel="category tag">Value Semantics</a>.<br/>
+                <div class="tags"><p>Tags: <a href="/web/20140111132021/http://cpp-next.com/archive/tag/semantics/" rel="tag">semantics</a>, <a href="/web/20140111132021/http://cpp-next.com/archive/tag/value/" rel="tag">value</a></p></div>
+        </div>
+            </div>
+        </div>
+
+</body>
+</html>
