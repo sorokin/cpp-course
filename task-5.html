@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Задание №5</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #e0e0e0;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h2>Задание №5</h2>
+    <p>В данном задании необходимо написать два вида умных указателей, класс persistent_set,
+    и на основе persistent_set сравнить эффективность этих двух видов умных указателей.</p>
+    <p>Вам необходимо написать класс persistent_set, аналогичный
+    <a href="persistent-set.html">этому заданию для пересдачи</a> со следующими дополнительными
+    требованиями:</p>
+    <ul>
+      <li>Поскольку мы уже знаем что такое шаблоны, <span class="codein">value_type</span>
+      должен быть не какой-то заранее известный тип, а приходить из параметра шаблона
+      persistent_set'а.</li>
+      <li><span class="codein">persistent_set&lt;T&gt;</span> не должен требовать, чтобы
+      <span class="codein">T</span> был <span class="codein">DefaultConstructible</span>.</li>
+      <li>Поскольку мы знаем, что такое rvalue-references, persistent_set должен их
+      поддерживать: предоставлять перегрузки от rvalue-ссылок там где это уместно, енаблить мув
+      там, где это возможно.</li>
+      <li>Поскольку мы знаем, что такое noexcept, функции persistent_set'а должны быть
+      соответствующим образом аннотированы.</li>
+      <li>Пожалуйста, не забудьте написать <span class="codein">swap</span> для всех типов, для которых он имеет смысл.</li>
+    </ul>
+    <p>При реализации этого класса вам понадобится использовать умные указатели. В этом
+    задании вам предлагается реализовать два вида умных указателей и сравнить
+    производительность класса persistent_set с использованием каждого из них.</p>
+    <ul>
+      <li>Первый вид умных указателей это умные указатели на основе счетчиков ссылок. Скорее
+      всего вам не понадобится вся мощь предоставляемая shared_ptr (вам не понадобятся weak
+      ссылки, custom deleter'ы, возможность аттачиться к уже аллоцированному сырому указателю
+      и т.п.), поэтому вы можете сделать свой указатель более простым и эффективным, чем
+      стандартный <span class="codein">shared_ptr</span>.
+      </li>
+      <li>Второй вид указателей, назовем его linked_ptr, мы не разбирали на лекции, он основан
+      на следующей идее. Давайте провяжем все указатели ссылающиеся на данный объект в
+      двусвязный список. Когда указатель перестает ссылаться на объект он удаляется из
+      этого списка. Когда список становится пустым объект можно удалить. Бонусом такого
+      умного указателя является то, что он может аттачиться к сырому указателю без аллокации
+      памяти.</li>
+    </ul>
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer">
+        <img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+      </a>
+    </p>
+  </body>
+</html>
+
