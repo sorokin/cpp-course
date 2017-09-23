@@ -1,0 +1,630 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Move It With Rvalue&nbsp;References</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #f9f9f9;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .author
+      {
+        font-family:'Liberation Sans', sans-serif;
+        font-size: 10pt;
+        font-style: italic;
+      }
+    table {width: 100%;}
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+<body>
+    <div class="author">September 11th, 2009 by Dave Abrahams</div>
+                        <h2 class="article_view_header">Move It With Rvalue&nbsp;References</h2>
+
+
+
+                        <div class="entry">
+
+<p>This is the second article in a series about efficient
+value types in C++.  In the <a href="1-want-speed-pass-by-value.html">previous
+installment</a>,
+we discussed how copy elision can be leveraged to eliminate many
+copies we might otherwise make.  Copy elision is transparent, happens
+automatically in natural-looking code, and has almost no downside.  So
+much for the good news; here&#8217;s the bad:<span id="more-366"></span></p>
+
+<ol>
+<li><p>Copy elision isn&#8217;t mandated by standard, so you can&#8217;t write
+portable code with the <em>assurance</em> that it will take effect.</p></li>
+<li><p>Sometimes it can&#8217;t be done. For example, in</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">return</span> q <span style="color: #008080;">?</span> var1 <span style="color: #008080;">:</span> var2<span style="color: #008080;">;</span></pre></div>
+
+
+the callee can use the memory area passed from the caller for at
+most one of <code>var1</code> or <code>var2</code>.  If it chooses to store <code>var1</code>
+in that area and <code>q</code> turns out to be <code>false</code>, <code>var2</code> still
+needs to be copied (and vice-versa).</li>
+<li><p>There are still many opportunities for copy elimination that
+lie beyond the reach of compilers&#8217; stack allocation tricks.</p></li>
+</ol>
+
+<h3>Slow Shuffle</h3>
+
+<p>Many of these other opportunities for optimization occur up when an
+operation is fundamentally concerned with rearranging data.  Take for
+example a simple generic insertion sort:<sup id="fnref:insertionsort"><a href="#fn:insertionsort" rel="footnote">1</a></sup></p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> Iter<span style="color: #000080;">&gt;</span>                                                  
+<span style="color: #0000ff;">void</span> insertion_sort<span style="color: #008000;">&#40;</span>Iter first, Iter last<span style="color: #008000;">&#41;</span>                              
+<span style="color: #008000;">&#123;</span>                                                                       
+    <span style="color: #0000ff;">if</span> <span style="color: #008000;">&#40;</span>first <span style="color: #000080;">==</span> last<span style="color: #008000;">&#41;</span> <span style="color: #0000ff;">return</span><span style="color: #008080;">;</span>                                          
+&nbsp;
+    Iter i <span style="color: #000080;">=</span> first<span style="color: #008080;">;</span>                                                     
+    <span style="color: #0000ff;">while</span> <span style="color: #008000;">&#40;</span><span style="color: #000040;">++</span>i <span style="color: #000040;">!</span><span style="color: #000080;">=</span> last<span style="color: #008000;">&#41;</span>     <span style="color: #666666;">// Invariant: elements preceding i are sorted</span>
+    <span style="color: #008000;">&#123;</span>                                                                   
+        Iter next <span style="color: #000080;">=</span> i, prev <span style="color: #000080;">=</span> i<span style="color: #008080;">;</span>                                        
+        <span style="color: #0000ff;">if</span> <span style="color: #008000;">&#40;</span><span style="color: #000040;">*--</span>prev <span style="color: #000080;">&gt;</span> <span style="color: #000040;">*</span>i<span style="color: #008000;">&#41;</span>                                               
+        <span style="color: #008000;">&#123;</span>                                                               
+            <span style="color: #0000ff;">typename</span> std<span style="color: #008080;">::</span><span style="color: #007788;">iterator_traits</span><span style="color: #000080;">&lt;</span>Iter<span style="color: #000080;">&gt;</span><span style="color: #008080;">::</span><span style="color: #007788;">value_type</span> x<span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span>next<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>  
+            <span style="color: #0000ff;">do</span> <span style="color: #000040;">*</span>next <span style="color: #000080;">=</span> <span style="color: #000040;">*</span>prev<span style="color: #008080;">;</span>
+            <span style="color: #0000ff;">while</span><span style="color: #008000;">&#40;</span><span style="color: #000040;">--</span>next <span style="color: #000040;">!</span><span style="color: #000080;">=</span> first <span style="color: #000040;">&amp;&amp;</span> <span style="color: #000040;">*--</span>prev <span style="color: #000080;">&gt;</span> x<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>                      
+            <span style="color: #000040;">*</span>next <span style="color: #000080;">=</span> x<span style="color: #008080;">;</span>
+        <span style="color: #008000;">&#125;</span>                                                               
+    <span style="color: #008000;">&#125;</span>                                                                   
+<span style="color: #008000;">&#125;</span>                                                                       </pre></div></div>
+</pre></div>
+
+
+<div style="text-align:center">
+
+<div id="attachment_501" class="wp-caption alignleft" style="width: 310px"><img src="insort1-300x95.png" alt="Line 7: Outer Loop Invariant" title="Insertion Sort Outer Loop Invariant" width="300" height="95" class="size-medium wp-image-501" /><p class="wp-caption-text">Line 7: Outer Loop Invariant</p></div>
+
+<div id="attachment_502" class="wp-caption alignleft" style="width: 310px"><img src="insort2-300x121.png" alt="Line 12: copy first unsorted element to temp location" title="Insertion Sort Step 1" width="300" height="121" class="size-medium wp-image-502" /><p class="wp-caption-text">Line 12: copy first unsorted element to temp location</p></div>
+
+<div id="attachment_503" class="wp-caption alignleft" style="width: 310px"><img src="insort3-300x121.png" alt="Line 13: copy last sorted element forward" title="Insertion Sort Step 2" width="300" height="121" class="size-medium wp-image-503" /><p class="wp-caption-text">Line 13: copy last sorted element forward</p></div>
+
+<div id="attachment_504" class="wp-caption alignleft" style="width: 310px"><img src="insort4-300x115.png" alt="Line 13: keep copying forward until position found" title="Insertion Sort Step 3" width="300" height="115" class="size-medium wp-image-504" /><p class="wp-caption-text">Line 13: keep copying forward until position found</p></div>
+
+<div id="attachment_505" class="wp-caption alignleft" style="width: 310px"><img src="insort5-300x122.png" alt="Line 15: assign temp into position" title="Insertion Sort Step 4" width="300" height="122" class="size-medium wp-image-505" /><p class="wp-caption-text">Line 15: assign temp into position</p></div>
+
+</div>
+
+<p>Now consider what happens when sorting a sequence of whose elements
+are <code>std::vector&lt;std::string&gt;</code>s: in lines 12, 13, and 15, we
+potentially copy a vector of strings, which involves lots of memory
+allocations and data copying.</p>
+
+<p>Because a sort is a fundamentally data-conserving operation, though,
+these costs <em>should</em> be avoidable: all we really need to do in
+principle is to shuffle the objects around in the sequence.</p>
+
+<p>The key thing to notice about these expensive copies is that, in all
+cases, the value of the source object will never be used again.  Sound
+familiar?  Yep, that&#8217;s the case when the source is an rvalue, too.  In
+this case, however, the sources are lvalues: objects with known
+addresses.</p>
+
+<h3>What About Reference-Counting?</h3>
+
+<p>One popular way to address these inefficiencies is to allocate the
+elements on the heap and use sequences of reference-counted smart
+pointers to elements, rather than storing the elements directly.  A
+reference-counted smart pointer is just like a regular pointer, except
+that it keeps track of how many other reference-counted smart pointers
+are referencing the object, and deletes the object when the last one
+goes away.  Copying a reference-counted pointer just increments a
+reference count, and is <em>very</em> fast.  Assigning a reference counted
+increments one reference count and decrements another.  It is also
+<em>very</em> fast.</p>
+
+<p>So, what could be faster? Not counting at all, of course!  Also,
+reference counting has other drawbacks we&#8217;d like to avoid:</p>
+
+<ol>
+<li>It can actually be expensive in a multithreaded environment, since
+the count itself may be shared across threads, thus requiring
+synchronization.</li>
+<li>The approach breaks down in generic code, where the element type
+might end up being a lightweight type like <code>int</code>.  In that case,
+the addition of reference counting can actually be a significant
+efficiency <em>cost</em>.  You either end up paying that cost, or you have
+to introduce a complicated framework for deciding which types are
+lightweight enough to store directly and for accessing the values
+in a uniform manner. </li>
+<li><p>Reference semantics make code <a href="/web/20121221100546/http://cpp-next.com/archive/2009/08/want-speed-pass-by-value/#functional">harder to
+understand</a>.
+For example:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">typedef</span> std<span style="color: #008080;">::</span><span style="color: #007788;">vector</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">shared_ptr</span><span style="color: #000080;">&lt;</span>std<span style="color: #008080;">::</span><span style="color: #007788;">string</span><span style="color: #000080;">&gt;</span> <span style="color: #000080;">&gt;</span> svec<span style="color: #008080;">;</span>
+…
+svec s2 <span style="color: #000080;">=</span> s1<span style="color: #008080;">;</span>
+std<span style="color: #008080;">::</span><span style="color: #007788;">for_each</span><span style="color: #008000;">&#40;</span> s2.<span style="color: #007788;">begin</span><span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span>, s2.<span style="color: #007788;">end</span><span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span>, to_uppercase<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span></pre></div>
+
+
+
+<p>The upper-casing of <code>s2</code> also modifies the apparent value of <code>s1</code>.
+This is a bigger subject than we can treat fully here, but in
+short, when data sharing is hidden, seemingly-local modifications
+don&#8217;t necessarily have purely local effects.</p></li>
+</ol>
+
+<h3>Introducing C++0x Rvalue References</h3>
+
+<p>To help us solve these problems, C++0x introduces a new kind of reference, the
+<strong>rvalue reference</strong>.  An rvalue reference to <code>T</code> is spelled <code>T&amp;&amp;</code>
+(pronounced &#8220;tee ref-ref&#8221;), and we now call regular <code>T&amp;</code> references
+&#8220;lvalue references.&#8221;  The main difference between lvalue and rvalue
+references for our purposes is that non-<code>const</code> rvalue references can
+bind to rvalues.  Most C++ programmers have encountered an error
+message like this one at some point:</p>
+
+
+<div class="codeblock"><pre class="txt" style="font-family:monospace;">invalid initialization of non-const reference of type 'X&amp;' 
+from a temporary of type 'X'</pre></div>
+
+
+
+<p>Such a message usually results from code like</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">X f<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>            <span style="color: #666666;">// call to f yields an rvalue</span>
+<span style="color: #0000ff;">int</span> g<span style="color: #008000;">&#40;</span>X<span style="color: #000040;">&amp;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+<span style="color: #0000ff;">int</span> x <span style="color: #000080;">=</span> g<span style="color: #008000;">&#40;</span> f<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #666666;">// error</span></pre></div>
+
+
+
+<p>The rules say that a non-const (lvalue) reference will bind to an
+lvalue, but not to a temporary (i.e. to an rvalue).  It makes
+sense in a way, because any modifications made to the temporary
+through that reference are sure to be lost. <sup id="fnref:DandE"><a href="#fn:DandE" rel="footnote">2</a></sup> By contrast, a
+non-const <em>rvalue reference</em> will bind to a temporary, but not an
+lvalue:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">X f<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+X a<span style="color: #008080;">;</span>
+<span style="color: #0000ff;">int</span> g<span style="color: #008000;">&#40;</span>X<span style="color: #000040;">&amp;&amp;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+&nbsp;
+<span style="color: #0000ff;">int</span> b <span style="color: #000080;">=</span> g<span style="color: #008000;">&#40;</span> f<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #666666;">// OK</span>
+<span style="color: #0000ff;">int</span> c <span style="color: #000080;">=</span> g<span style="color: #008000;">&#40;</span> a <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>   <span style="color: #666666;">// ERROR: can't bind rvalue reference to an lvalue</span></pre></div>
+
+
+
+<h3>Stealing Resources</h3>
+
+<p>Let&#8217;s say our function <code>g()</code> has to store a copy of its argument
+for later use.</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">static</span> X cache<span style="color: #008080;">;</span>
+&nbsp;
+<span style="color: #0000ff;">int</span> g<span style="color: #008000;">&#40;</span>X<span style="color: #000040;">&amp;&amp;</span> a<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    cache <span style="color: #000080;">=</span> a<span style="color: #008080;">;</span>    <span style="color: #666666;">// keep it for later</span>
+<span style="color: #008000;">&#125;</span>
+&nbsp;
+<span style="color: #0000ff;">int</span> b <span style="color: #000080;">=</span> g<span style="color: #008000;">&#40;</span> X<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #666666;">// call g with a temporary</span></pre></div>
+
+
+Depending on the type X, this copy might be a very
+expensive operation involving memory allocation and deep copies of
+many subobjects.
+
+<p>Since <code>g()</code>&#8216;s parameter is an rvalue reference, we know that it will
+automatically bind <em>only</em> to unnamed temporaries, and nothing else. <sup id="fnref:liberal-binding"><a href="#fn:liberal-binding" rel="footnote">3</a></sup>
+Therefore,</p>
+
+<ol>
+<li>Shortly after we copy this temporary into <code>cache</code>, the source of
+the copy will be destroyed.</li>
+<li>Any modifications we might make to the temporary will be
+invisible to the rest of the program.</li>
+</ol>
+
+<p>That gives us the ability to perform new kinds of optimizations that
+avoid work by mutating the value of the temporary. The most common
+optimization of this kind is resource stealing.</p>
+
+<p><strong>Resource stealing</strong> means taking the resources (e.g., memory,
+large subobjects) from one object and transferring them to
+another. For example, a <code>String</code> class might have ownership over a
+buffer of characters allocated on the heap.  Copying a <code>String</code>
+involves allocating a new buffer and copying all of the characters
+into that new buffer, which is likely to be slow.  Stealing from the
+<code>String,</code> however, requires only that another object take the
+<code>String</code>&#8216;s buffer and notify the original (source) string that it no
+longer has a valid buffer&#8212;a far more efficient operation.  Using
+rvalue references, we can optimize our code by changing copying from a
+temporary into stealing from the temporary.  And, since only the
+temporary is affected, this optimization is <em>logically non-mutating</em>.</p>
+
+<div class="admonition note">
+
+<p class="admonition-title">Insight:</p>
+
+<p>Stealing from (or otherwise modifying) an rvalue reference
+should be considered a <em>logically non-mutating</em> operation</p>
+
+</div>
+
+<h3>The Rvalue Overloading Idiom</h3>
+
+<p>This insight makes possible a new <em>semantics-preserving program
+transformation</em>: we can overload any function that takes a (<code>const</code>)
+reference parameter with another that takes an rvalue reference
+parameter in the same position:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">void</span> g<span style="color: #008000;">&#40;</span>X <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> a<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> … <span style="color: #008000;">&#125;</span>    <span style="color: #666666;">// doesn't mutate argument</span>
+<span style="color: #0000ff;">void</span> g<span style="color: #008000;">&#40;</span>X<span style="color: #000040;">&amp;&amp;</span> a<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#123;</span> modify<span style="color: #008000;">&#40;</span>a<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #008000;">&#125;</span> <span style="color: #666666;">// new overload; logically non-mutating</span></pre></div>
+
+
+
+<p>The second overload of <code>g</code> can modify its argument without changing the
+meaning of the rest of the program as long as it otherwise has the
+same semantics as the first overload.</p>
+
+<h3>Binding And Overloading</h3>
+
+<p>The complete C++0x rules for reference binding and overload resolution are summarized in the table below:</p>
+
+<table>
+<thead>
+<tr>
+  <th align="right">Expression→<br />Reference Type↓</th>
+  <th align="center"><code>T</code><br />rvalue</th>
+  <th align="center"><code>const T</code><br />rvalue</th>
+  <th align="center"><code>T</code><br />lvalue</th>
+  <th align="center"><code>const T</code><br />lvalue</th>
+  <th align="center">Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td align="right"><code>T&amp;&amp;</code></td>
+  <td align="center">X</td>
+  <td align="center"></td>
+  <td align="center"></td>
+  <td align="center"></td>
+  <td align="center">4</td>
+</tr>
+<tr>
+  <td align="right"><code>const T&amp;&amp;</code></td>
+  <td align="center">X</td>
+  <td align="center">X</td>
+  <td align="center"></td>
+  <td align="center"></td>
+  <td align="center">3</td>
+</tr>
+<tr>
+  <td align="right"><code>T&amp;</code></td>
+  <td align="center"></td>
+  <td align="center"></td>
+  <td align="center">X</td>
+  <td align="center"></td>
+  <td align="center">2</td>
+</tr>
+<tr>
+  <td align="right"><code>const T&amp;</code></td>
+  <td align="center">X</td>
+  <td align="center">X</td>
+  <td align="center">X</td>
+  <td align="center">X</td>
+  <td align="center">1</td>
+</tr>
+</tbody>
+</table>
+
+<p></p>
+
+<p>The &#8220;Priority&#8221; column describes how these references behave with respect
+to overload resolution.  For example, given the following overload set:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">void</span> f<span style="color: #008000;">&#40;</span><span style="color: #0000ff;">int</span><span style="color: #000040;">&amp;&amp;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>        <span style="color: #666666;">// #1</span>
+<span style="color: #0000ff;">void</span> f<span style="color: #008000;">&#40;</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span><span style="color: #000040;">&amp;&amp;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>  <span style="color: #666666;">// #2</span>
+<span style="color: #0000ff;">void</span> f<span style="color: #008000;">&#40;</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span><span style="color: #000040;">&amp;</span><span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>   <span style="color: #666666;">// #3</span></pre></div>
+
+
+passing an rvalue of type <code>const int</code> to <code>f</code> will invoke overload #2,
+because overload #1 represents a disallowed binding and #3 appears in 
+a row with lower priority.
+
+<h3>Declaring a Movable Type</h3>
+
+<p>We can use this idiom to make rvalues of any type <em>implicitly movable</em>
+using two new operations, <strong>move construction</strong> and <strong>move
+assignment</strong>, that take rvalue reference arguments.  For example, a
+movable <code>std::vector</code> might look like this in C++0x:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">template</span> <span style="color: #000080;">&lt;</span><span style="color: #0000ff;">class</span> T, <span style="color: #0000ff;">class</span> A<span style="color: #000080;">&gt;</span>
+<span style="color: #0000ff;">struct</span> vector
+<span style="color: #008000;">&#123;</span>
+    vector<span style="color: #008000;">&#40;</span>vector <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> lvalue<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>            <span style="color: #666666;">// copy constructor</span>
+    vector<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>vector <span style="color: #0000ff;">const</span><span style="color: #000040;">&amp;</span> lvalue<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #666666;">// copy assignment operator</span>
+    vector<span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rvalue<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>                 <span style="color: #666666;">// move constructor</span>
+    vector<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rvalue<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>      <span style="color: #666666;">// move assignment operator</span>
+    …
+<span style="color: #008000;">&#125;</span><span style="color: #008080;">;</span></pre></div>
+
+
+
+<div id="job">
+
+<p>It&#8217;s the job of a move constructor or assignment operator to &#8220;steal&#8221;
+resources from its argument, leaving that argument in a destructible
+and assignable state.<sup id="fnref:good-state"><a href="#fn:good-state" rel="footnote">4</a></sup></p>
+
+</div>
+
+<p>In the case of <code>std::vector</code>, that probably means returning the
+argument to its empty state.  A typical implementation of
+<code>std::vector</code> contains three pointers: one to the beginning of
+allocated storage, another that points to the the end of the elements
+in the vector, and a third that points to the end of allocated
+storage.  So, assuming these pointers are all null when the vector is
+empty, the move constructor might look something like this:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">vector<span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rhs<span style="color: #008000;">&#41;</span> 
+  <span style="color: #008080;">:</span> start<span style="color: #008000;">&#40;</span>rhs.<span style="color: #007788;">start</span><span style="color: #008000;">&#41;</span>                <span style="color: #666666;">// adopt rhs's storage</span>
+  , elements_end<span style="color: #008000;">&#40;</span>rhs.<span style="color: #007788;">elements_end</span><span style="color: #008000;">&#41;</span>
+  , storage_end<span style="color: #008000;">&#40;</span>rhs.<span style="color: #007788;">storage_end</span><span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>    <span style="color: #666666;">// mark rhs as empty.</span>
+     rhs.<span style="color: #007788;">start</span> <span style="color: #000080;">=</span> rhs.<span style="color: #007788;">elements_end</span> <span style="color: #000080;">=</span> rhs.<span style="color: #007788;">storage_end</span> <span style="color: #000080;">=</span> <span style="color: #0000dd;">0</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+<div id="naive-vector-move-assignment">
+
+<p>And the move assignment operator might go this way:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">vector<span style="color: #000040;">&amp;</span> operator<span style="color: #000080;">=</span><span style="color: #008000;">&#40;</span>vector<span style="color: #000040;">&amp;&amp;</span> rhs<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span> 
+    std<span style="color: #008080;">::</span><span style="color: #007788;">swap</span><span style="color: #008000;">&#40;</span><span style="color: #000040;">*</span><span style="color: #0000dd;">this</span>, rhs<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #000040;">*</span><span style="color: #0000dd;">this</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<p>Since the rvalue argument is going to be destroyed anyway, swapping
+not only acquires its resources but essentially &#8220;schedules&#8221; our
+current resources for later destruction.</p>
+
+<div class="admonition">
+
+<p class="admonition-title">Note:</p>
+
+<p>Don&#8217;t get too comfortable yet; this move assignment operator
+is still not quite right.</p>
+
+</div>
+
+</div>
+
+<h3>Rvalue References and Copy Elision</h3>
+
+<p>Move construction of <code>std::vector</code> is extremely cheap (approximately
+3 loads and 6 stores to memory), but it&#8217;s not free.  Fortunately, the
+standard is written so that copy elision (which is truly free) can
+take priority over move operations.  When you pass an rvalue by value,
+or return anything by value from a function, the compiler first gets
+the option to elide the copy.  If the copy isn&#8217;t elided, but the type
+in question has a move constructor, the compiler is <em>required</em> to use
+the move constructor.  Lastly, if there&#8217;s no move constructor, the
+compiler falls back to using the copy constructor.</p>
+
+<p>For example:</p>
+
+
+<div class="codeblock"><pre class="cpp" style="font-family:monospace;">A compute<span style="color: #008000;">&#40;</span>…<span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    A v<span style="color: #008080;">;</span>
+    …
+    <span style="color: #0000ff;">return</span> v<span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></div>
+
+
+
+<ol>
+<li>If <code>A</code> has an accessible copy or move constructor, the compiler may choose to elide the copy</li>
+<li>otherwise, if <code>A</code> has a move constructor, v is moved</li>
+<li>otherwise, if <code>A</code> has a copy constructor, v is copied</li>
+<li>otherwise, a compile time error is emitted.</li>
+</ol>
+
+<p>Therefore, the guideline from the previous article still applies:</p>
+
+<div class="admonition">
+<p class="admonition-title">Guideline</p>
+Don&#8217;t copy your function arguments.  Instead, pass them
+by value and let the compiler do the copying.
+</div>
+
+<p>In light of the above guideline, you may now be asking yourself, &#8220;aside
+from move constructors and assignment operators, where would I use the
+rvalue overloading idiom?  Once all my types are movable, what is
+left to be done?&#8221;  Examples follow.</p>
+
+<h3 id="permission-to-move">Moving From Lvalues</h3>
+
+<p>All these move optimizations have one thing in common: they occur when
+we&#8217;re through using the source object.  Sometimes, though, we need to
+give the compiler a hint.  For example:</p>
+
+
+<table><tr><td class="line_numbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">void</span> g<span style="color: #008000;">&#40;</span>X<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+&nbsp;
+<span style="color: #0000ff;">void</span> f<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    X b<span style="color: #008080;">;</span>
+    g<span style="color: #008000;">&#40;</span>b<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+    …
+    g<span style="color: #008000;">&#40;</span>b<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+<span style="color: #008000;">&#125;</span></pre></td></tr></table>
+
+
+
+<p>In line 8, we call <code>g</code> with an lvalue, which is ineligible for
+resource-stealing&#8212;even though we&#8217;re never going to use <code>b</code> again.
+To tell the compiler that it can move from <code>b</code>, we can pass it through
+<code>std::move</code>:</p>
+
+
+<table><tr><td class="line_numbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="codeblock"><pre class="cpp" style="font-family:monospace;"><span style="color: #0000ff;">void</span> g<span style="color: #008000;">&#40;</span>X<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>
+&nbsp;
+<span style="color: #0000ff;">void</span> f<span style="color: #008000;">&#40;</span><span style="color: #008000;">&#41;</span>
+<span style="color: #008000;">&#123;</span>
+    X b<span style="color: #008080;">;</span>
+    g<span style="color: #008000;">&#40;</span>b<span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span>              <span style="color: #666666;">// still need the value of b</span>
+    …
+    g<span style="color: #008000;">&#40;</span> std<span style="color: #008080;">::</span><span style="color: #007788;">move</span><span style="color: #008000;">&#40;</span>b<span style="color: #008000;">&#41;</span> <span style="color: #008000;">&#41;</span><span style="color: #008080;">;</span> <span style="color: #666666;">// all done with b now; grant permission to move</span>
+<span style="color: #008000;">&#125;</span></pre></td></tr></table>
+
+
+
+<p>Note that <code>std::move</code> doesn&#8217;t itself do any moving.  It merely
+converts its argument into an rvalue reference so that move
+optimizations can kick in <em>if</em> it is used in a &#8220;move-optimized&#8221;
+context.  When you see <code>std::move</code>, you should think: &#8220;grant
+permission to move.  You can also think of <code>std::move(a)</code> as a
+descriptive way to write <code>static_cast&lt;X&amp;&amp;&gt;(a)</code>.</p>
+
+<h3 id="boogie">Boogie Shuffle</h3>
+
+<p>Now that we have a way to move from lvalues, we can optimize the
+<code>insertion_sort</code> algorithm from a few segments back:</p>
+
+<div class="codeblock"><pre lang="cpp" class="1">
+template &lt;class Iter&gt;
+void insertion_sort(Iter first, Iter last) 
+{ 
+    if (first == last) return; 
+
+    Iter i = first; 
+    while (++i != last)     // Invariant: [first, i) is sorted 
+    { 
+        Iter next = i, prev = i; 
+        if (*--prev > *i)
+        {
+            typename std::iterator_traits<Iter>::value_type 
+              x( std::move(*next) );
+            do *next = std::move(*prev);
+            while(--next != first &#038;&#038; *--prev > x);
+            *next = std::move(x);
+        }
+    }
+}
+</pre></div>
+
+<div class="alignright">
+
+<div id="attachment_457" class="wp-caption alignleft" style="width: 310px"><img src="/web/20121221100546im_/http://cpp-next.com/wp-content/uploads/2009/08/m1-300x121.png" alt="Line 12: move first unsorted element to temp location" title="Insertion Sort Step 1" width="300" height="121" class="size-medium wp-image-457" /><p class="wp-caption-text">Line 12: move first unsorted element to temp location</p></div>
+
+<div id="attachment_458" class="wp-caption alignleft" style="width: 310px"><img src="/web/20121221100546im_/http://cpp-next.com/wp-content/uploads/2009/08/m2-300x121.png" alt="Line 13: move last sorted element forward" title="Insertion Sort Step 2" width="300" height="121" class="size-medium wp-image-458" /><p class="wp-caption-text">Line 13: move last sorted element forward</p></div>
+
+<div id="attachment_459" class="wp-caption alignleft" style="width: 310px"><img src="/web/20121221100546im_/http://cpp-next.com/wp-content/uploads/2009/08/m3-300x115.png" alt="Line 13: keep moving forward" title="Insertion Sort Step 3" width="300" height="115" class="size-medium wp-image-459" /><p class="wp-caption-text">Line 13: keep moving forward</p></div>
+
+<div id="attachment_460" class="wp-caption alignleft" style="width: 310px"><img src="/web/20121221100546im_/http://cpp-next.com/wp-content/uploads/2009/08/m4-300x122.png" alt="Line 15: move-assign temp into position" title="Insertion Sort Step 4" width="300" height="122" class="size-medium wp-image-460" /><p class="wp-caption-text">Line 15: move-assign temp into position</p></div>
+
+</div>
+
+<p>Formatting aside, the <em>only</em> difference between this version of the
+algorithm and the previous one is the addition of calls to
+<code>std::move</code>.  It's worth pointing out that we only need
+this one implementation of <code>insertion_sort</code>, regardless of whether
+the element type has a move constructor.  This is typical of
+move-enabled code: the design of rvalue references allows a "move if
+you can; copy if you must" approach.</p>
+
+<h3>Movin' On</h3>
+
+<p>That's all for now, but this series will be back (soon, I
+promise---the material is already written!) to cover rvalue
+ressurection, exception-safety, perfect forwarding, and more.  Oh,
+yes: and we'll tell you how to write <code>vector</code>'s move assignment
+operator.  Ta-ta till then!</p>
+
+<hr />
+
+<p>Please follow <a href="/web/20121221100546/http://cpp-next.com/archive/2009/09/making-your-next-move/">this
+link</a> to the next
+installment.</p>
+
+<div class="footnotes">
+<hr />
+<ol>
+
+<li id="fn:insertionsort">
+<p>If it seems strange to you that insertion sort is
+mentioned in the same breath as efficiency, take a look at standard
+library's implementation of the <code>sort</code> algorithm.  You'll
+probably see that it uses an insertion sort when the sequence to be
+sorted is short enough.&#160;<a href="#fnref:insertionsort" rev="footnote">&#8617;</a></p>
+</li>
+
+<li id="fn:DandE">
+<p>Section 3.7 of Bjarne Stroustrup's excellent book, <a href="/web/20121221100546/http://www.research.att.com/~bs/dne.html"><em>The Design and
+Evolution of C++</em></a>
+explains the motivation for this rule.&#160;<a href="#fnref:DandE" rev="footnote">&#8617;</a></p>
+</li>
+
+<li id="fn:liberal-binding">
+<p>In early versions of the rvalue reference
+specification, rvalue references were allowed to bind to lvalues, so if you
+are experimenting with an early implementation of rvalue references
+such as the one in GCC 4.3 or 4.4, watch out for this gotcha.&#160;<a href="#fnref:liberal-binding" rev="footnote">&#8617;</a></p>
+</li>
+
+<li id="fn:good-state">
+<p>In general, a moved-from object should be valid and
+consistent under all normal operations, but the abilities to destroy
+and assign to the object are a bare minimum for use with the STL.&#160;<a href="#fnref:good-state" rev="footnote">&#8617;</a></p>
+</li>
+
+</ol>
+</div></body>
+</html>
