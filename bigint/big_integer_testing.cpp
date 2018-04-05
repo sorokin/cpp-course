@@ -680,3 +680,33 @@ TEST(correctness, mul_merge_randomized)
         EXPECT_TRUE(a == b);
     }
 }
+
+namespace
+{
+    big_integer rand_big(size_t size)
+    {
+        big_integer result = rand();
+
+        for (size_t i = 0; i != size; ++i)
+        {
+            result *= RAND_MAX;
+            result += rand();
+        }
+
+        return result;
+    }
+}
+
+TEST(correctness, div_randomized)
+{
+    for (size_t itn = 0; itn != number_of_iterations * number_of_multipliers; ++itn)
+    {
+        big_integer divident = rand_big(10);
+        big_integer divisor = rand_big(6);
+        big_integer quotient = divident / divisor;
+        big_integer residue = divident % divisor;
+        ASSERT_EQ(divident - quotient * divisor, residue);
+        EXPECT_GE(residue, 0);
+        EXPECT_LT(residue, divisor);
+    }
+}
