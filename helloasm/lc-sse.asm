@@ -29,16 +29,11 @@ _start:
                 movdqa          xmm1, oword [rsi]
                 add             rsi, 16
                 pcmpeqb         xmm1, xmm0
-                psubb           xmm2, xmm1
+                pmovmskb        edx, xmm1
+                popcnt          edx, edx
+                add             rbx, rdx
                 dec             rcx
                 jnz             .next_oword
-
-                psadbw          xmm2, xmm3
-                movd            ecx, xmm2
-                add             rbx, rcx
-                movhlps         xmm2, xmm2
-                movd            ecx, xmm2
-                add             rbx, rcx
 
 .skip_by_oword:
                 and             rax, 15
