@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Ибрахим Ахмад Махджуб, Экзамен C++, 8 июля 2020</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+    .codeblock
+    {
+      background: #e0e0e0;
+      border: solid 1px black;
+      padding: 5px;
+      font-family: monospace;
+    }
+    .codein
+    {
+      font-family: monospace;
+    }
+    pre { margin: 0; }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    ol li { list-style-type: lower-russian; }
+    p {font-family:sans-serif; font-size: 12pt;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+<h2>Ибрахим Ахмад Махджуб</h2>
+<h2>Вопрос 1</h2>
+<p>Какие значения получат регистры <span class="codein">bl</span>, <span class="codein">cl</span> после исполнения функции <span class="codein">foo</span>?</p>
+<div class="codeblock"><pre>somevar:    dw 0
+
+foo:
+            mov ax, 0x1234
+            mov [somevar], ax
+            
+            mov bl, [somevar]
+            mov cl, [somevar + 1]
+
+            ret</pre></div>
+<h2>Вопрос 2</h2>
+<p>Даны три инструкции:</p><div class="codeblock"><pre>            lea     rdi, [rdi + 8]
+            mov     rdi, [rdi + 8]
+            add     rdi, 8</pre></div>
+<p>Опишите, что делает каждая из них. Чем поведение <span class="codein">lea</span> отличается от <span class="codein">mov</span>? Чем поведение <span class="codein">lea</span> отличается от <span class="codein">add</span>.</p>
+<h2>Вопрос 3</h2>
+<p>Вам дана документация к инструкции <span class="codein">neg</span>: <a href="https://www.felixcloutier.com/x86/neg">https://www.felixcloutier.com/x86/neg</a>. Что нужно написать на месте ???, чтобы переход на метку <span class="codein">was_zero</span> осуществлялся, когда <span class="codein">rax == 0</span>?</p><div class="codeblock"><pre>            neg		rax
+            j???	was_zero</pre></div>
+<h2>Вопрос 4</h2>
+<p>Что такое соглашения вызова функций? Какие соглашения вызова функций вы знаете? Чем они отличаются друг от друга?</p><h2>Вопрос 5</h2>
+<p>Пусть у нас есть функция <span class="codein">void foo(int, void*)</span>. Какой код необходимо сгенерить компилятору, чтобы вызвать эту функцию <span class="codein">f(42, nullptr)</span>, предполагая что программа компилируется под 64-битный Linux?</p><h2>Вопрос 6</h2>
+<p>Зачем нужна страничная адресация?</p><h2>Вопрос 7</h2>
+<p>Предполагая что программа скомпилирована для Linux 64-bit, чему равны <span class="codein">sizeof</span> и <span class="codein">alignof</span> следующих структур? Объясните почему.</p><div class="codeblock"><pre>struct s1
+{
+    int a;
+    int b;
+};
+
+struct s2
+{
+    char a;
+    int b;
+};
+
+struct s3
+{
+    int a;
+    char b;
+};
+
+struct s4
+{
+    char a;
+    int b;
+    char c;
+};
+
+struct s5
+{};
+
+struct s6
+{
+    s5 x, y, z;
+};
+
+struct s7 : s5
+{};
+
+struct s8 : s5, s7
+{};
+
+struct t10
+{
+    virtual void foo();
+};
+
+struct t11 : t10
+{
+    virtual void bar();
+};
+
+struct t12 : virtual t10
+{};</pre></div>
+<h2>Вопрос 8</h2>
+<p>Пусть есть две программы:</p><div class="codeblock"><pre>// 1
+void f(int) {}
+void f(signed int) {}
+void f(unsigned int) {}</pre></div>
+<div class="codeblock"><pre>// 2
+void f(char) {}
+void f(signed char) {}
+void f(unsigned char) {}</pre></div>
+<p>Компилируются ли они или нет? Если нет, то почему?</p><h2>Вопрос 9</h2>
+<p><ol><li>Чему равен минимальный <span class="codein">float</span> строго больший <span class="codein">1.f</span>?</li>
+<li>Чему равен минимальный <span class="codein">float</span> строго больший <span class="codein">2.f</span>?</li></ol></p>
+<h2>Вопрос 10</h2>
+<p>(если в этом задании отвечаете нет, приведите контрпример)
+    
+    <ol><li>Правда ли, что для любых floating-point a и b верно a + b == b + a?</li>
+    <li>Правда ли, что для любых floating-point a, b и c верно a + (b + c) == (a + b) + c?</li>
+    <li>Правда ли, что для любого floating-point a верно 1 * a == a?</li>
+    <li>Правда ли, что для любого floating-point a верно 0 * a == 0?</li>
+    <li>Правда ли, что для любого floating-point a верно a - a == 0?</li></ol></p><h2>Вопрос 11</h2>
+<p>Дана программа, состоящая из следующих файлов:</p><div class="codeblock"><pre>// main.cpp
+#include "f.h"
+
+int main()
+{
+    f();
+    g();
+}</pre></div>
+<div class="codeblock"><pre>// f.h
+#pragma once
+#include &lt;iostream&gt;
+
+void f()
+{
+    std::cout &lt;&lt; "hello";
+}</pre></div>
+<div class="codeblock"><pre>// g.cpp
+#include "f.h"
+
+void g()
+{
+    std::cout &lt;&lt; ' ';
+    f();
+}</pre></div>
+<p>Скомпилируется ли данная программа? Если да, то что она выведет? Если нет, то какие в ней ошибки и как их можно исправить?</p><h2>Вопрос 12</h2>
+<p>Пусть есть следующий заголовочный файл:</p><div class="codeblock"><pre>// numbers.h
+static int val;
+
+inline int next()
+{
+    return val++;
+}</pre></div>
+<p>Какие вы видите ошибки в этом файле? Как их можно исправить?</p><h2>Вопрос 13</h2>
+<p>Приведите пример программы, приводящий к</p>
+
+<p><ol><li>ошибке трансляции из-за ссылки на необъявленную функцию</li>
+<li>ошибке линковки из-за ссылки на неопределенную функцию</li>
+<li>ошибке трансляции из-за двойного определения функции</li>
+<li>ошибке линковки из-за двойного определения функции</li></ol></p><h2>Вопрос 14</h2>
+<p>Будем считать, что правильный оператор [], это такой, который ведет себя как [] у массива. Объясните почему такие операторы [] у mystring неправильные:</p><p><ol><li><span class="codein">char operator[](size_t i);</span> (одной перегрузкой)</li>
+<li><span class="codein">char&amp; operator[](size_t i) const;</span> (одной перегрузкой)</li></ol></p><p>Напишите правильный набор перегрузок для оператор [] у класса mystring.</p><h2>Вопрос 15</h2>
+<p>Что означают модификаторы доступа public и private?</p><h2>Вопрос 16</h2>
+<p>Рассмотрим следующую программу:</p><div class="codeblock"><pre>struct base
+{
+protected:
+    int x;
+};
+
+struct derived : base
+{
+    void foo(base&amp; a, derived&amp; b)
+    {
+        x; // 1
+        a.x; // 2
+        b.x; // 3
+    }
+};</pre></div>
+<p>Какие из трех обращений разрешены, а какие нет? Исходя из этого сформулируйте правило, что означает модификатор доступа protected. Почему было бы плохо, если бы правила языка были сформулированны так, что все три обращения (1, 2, 3) были разрешены?</p><h2>Вопрос 17</h2>
+<p>Корректная ли это программа? Если корректная, то, что она выводит? Если некорректная, то, в чём заключается ошибка?</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    base()
+    {
+        f();
+    }
+    
+    void f()
+    {
+        g();
+    }
+    
+    virtual void g() = 0;
+};
+
+struct derived : base
+{
+    void g()
+    {
+        std::cout &lt;&lt; "hello\n";
+    }
+};
+
+int main()
+{
+    derived d;
+}</pre></div>
+<p>Почему программа выше и программа ниже ведут себя по-разному?</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    base()
+    {
+        g();
+    }
+    
+    virtual void g() = 0;
+};
+
+struct derived : base
+{
+    void g()
+    {
+        std::cout &lt;&lt; "hello\n";
+    }
+};
+
+int main()
+{
+    derived d;
+}</pre></div>
+<h2>Вопрос 18</h2>
+<p>Корректная ли это программа? Если да, то что она выведет? Если нет, то в чём заключается ошибка и как её можно исправить?</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    virtual void hello();
+};
+
+struct derived : base
+{
+    void hello() override;
+};
+
+void base::hello()
+{
+    std::cout &lt;&lt; "base\n";
+}
+
+void derived::hello()
+{
+   std::cout &lt;&lt; "derived\n";
+}
+
+int main()
+{
+    base* b = new derived();
+    b-&gt;hello();
+    delete b;
+}</pre></div>
+<h2>Вопрос 19</h2>
+<div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    virtual char const* msg() const
+    {
+        return "base";
+    }
+};
+
+struct derived : base
+{
+    char const* msg() const
+    {
+        return "derived";
+    }
+};
+
+void f()
+{
+    throw derived();
+}
+
+void g()
+{
+    try
+    {
+        f();
+    }
+    catch (base const&amp; b)
+    {
+        std::cout &lt;&lt; b.msg() &lt;&lt; '\n';
+        throw b;
+    }
+}
+
+int main()
+{
+    try
+    {
+        g();
+    }
+    catch (base const&amp; b)
+    {
+        std::cout &lt;&lt; b.msg();
+    }
+}
+</pre></div>
+<p>Что выводит данная программа? Почему? Как нужно её исправить, чтобы выводилось "derived\nderived"?</p><h2>Вопрос 20</h2>
+<p><ol><li>Можно ли бросать исключения из деструктора? Если да, приведите пример.</li>
+<li>Можно ли бросать исключения из конструктора? Если да, приведите пример.</li></ol></p><h2>Вопрос 21</h2>
+<p>Почему такая реализации оператора присваивания у класса mystring является ошибочной?</p><div class="codeblock"><pre>mystring&amp; mystring::operator=(mystring const&amp; rhs)
+{
+    operator delete(data_);
+    size_ = rhs.size_;
+    capacity_ = size_;
+    data_ = static_cast&lt;char*&gt;(operator new(rhs.size_ + 1));
+    memcpy(data_, rhs.data_, rhs.size_ + 1);
+    return *this;
+}</pre></div>
+<h2>Вопрос 22</h2>
+<p>Что такое small-object оптимизация? Приведите примеры. В каких случаях она даёт выигрыш? В каких случаях она даёт проигрыш?</p><h2>Вопрос 23</h2>
+<p>Напишите шаблонный класс (и, если нужно, специализации к нему), который позволяет сравнить два типа на совпадение. То есть:</p><div class="codeblock"><pre>is_same&lt;int, int&gt;::value == true
+is_same&lt;int, float&gt;::value == false
+is_same&lt;char*, mytype&gt;::value == false
+is_same&lt;char, char const&gt;::value == false
+is_same&lt;vector&lt;int&gt;*, vector&lt;int&gt;*&gt;::value == true</pre></div>
+<h2>Вопрос 24</h2>
+<p>Пусть необходимо реализовать класс mytype&lt;T&gt; двумя способами в зависимости от того, является ли тип T знаковым или беззнаковым выбираемый во время компиляции программы.</p>
+
+<p>Напишите реализацию такого класса используя SFINAE.</p><h2>Вопрос 25</h2>
+<p>Что такое two-phase name lookup? Прведите пример программы, коротая либо компилируется либо нет в зависимости от того поддерживает компилятор two-phase name lookup или нет.</p><h2>Вопрос 26</h2>
+<p>Что такое ADL? Приведите пример программы, которая компилируется, но если бы в языке не было ADL она бы не компилировалась.</p>  </body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Давыдов Артём Вадимович, Экзамен C++, 8 июля 2020</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+    .codeblock
+    {
+      background: #e0e0e0;
+      border: solid 1px black;
+      padding: 5px;
+      font-family: monospace;
+    }
+    .codein
+    {
+      font-family: monospace;
+    }
+    pre { margin: 0; }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    ol li { list-style-type: lower-russian; }
+    p {font-family:sans-serif; font-size: 12pt;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+<h2>Давыдов Артём Вадимович</h2>
+<h2>Вопрос 1</h2>
+<p>Пусть регистр <span class="codein">rax</span> содержит значение 11415920083049886354 (0x9e6d7ed4d66fb292 в шестнадцатеричной записи). Какие в этом случае значения содержат регистры <span class="codein">eax</span>, <span class="codein">ax</span>, <span class="codein">al</span>, <span class="codein">ah</span>?</p><h2>Вопрос 2</h2>
+<p>Вам дана документация к инструкции <span class="codein">neg</span>: <a href="https://www.felixcloutier.com/x86/neg">https://www.felixcloutier.com/x86/neg</a>. Что нужно написать на месте ???, чтобы переход на метку <span class="codein">was_zero</span> осуществлялся, когда <span class="codein">rax == 0</span>?</p><div class="codeblock"><pre>            neg		rax
+            j???	was_zero</pre></div>
+<h2>Вопрос 3</h2>
+<p>Напишите (на ассемблере) функцию вычисляющую <span class="codein">N</span>'ое число фибоначчи (mod 2<sup>64</sup>). <span class="codein">fib(0) = 0</span>, <span class="codein">fib(1) = 1</span>, <span class="codein">fib(n) = fib(n - 1) + fib(n - 2)</span>. Считайте, что при входе <span class="codein">N</span> записано в регистре <span class="codein">rdi</span>. При выходе ответ должен быть записан в <span class="codein">rax</span>.</p><h2>Вопрос 4</h2>
+<p>Что такое соглашения вызова функций? Какие соглашения вызова функций вы знаете? Чем они отличаются друг от друга?</p><h2>Вопрос 5</h2>
+<p>Пусть у нас есть функция <span class="codein">void foo(int, void*)</span>. Какой код необходимо сгенерить компилятору, чтобы вызвать эту функцию <span class="codein">f(42, nullptr)</span>, предполагая что программа компилируется под 64-битный Linux?</p><h2>Вопрос 6</h2>
+<p>Зачем нужна страничная адресация?</p><h2>Вопрос 7</h2>
+<p>Предполагая что программа скомпилирована для Linux 64-bit, чему равны <span class="codein">sizeof</span> и <span class="codein">alignof</span> следующих структур? Объясните почему.</p><div class="codeblock"><pre>struct s1
+{
+    int a;
+    int b;
+};
+
+struct s2
+{
+    char a;
+    int b;
+};
+
+struct s3
+{
+    int a;
+    char b;
+};
+
+struct s4
+{
+    char a;
+    int b;
+    char c;
+};
+
+struct s5
+{};
+
+struct s6
+{
+    s5 x, y, z;
+};
+
+struct s7 : s5
+{};
+
+struct s8 : s5, s7
+{};
+
+struct t10
+{
+    virtual void foo();
+};
+
+struct t11 : t10
+{
+    virtual void bar();
+};
+
+struct t12 : virtual t10
+{};</pre></div>
+<h2>Вопрос 8</h2>
+<p><ol><li>Чему равен минимальный <span class="codein">float</span> строго больший <span class="codein">1.f</span>?</li>
+<li>Чему равен минимальный <span class="codein">float</span> строго больший <span class="codein">2.f</span>?</li></ol></p>
+<h2>Вопрос 9</h2>
+<p>(если в этом задании отвечаете нет, приведите контрпример)
+    
+    <ol><li>Правда ли, что для любых floating-point a и b верно a + b == b + a?</li>
+    <li>Правда ли, что для любых floating-point a, b и c верно a + (b + c) == (a + b) + c?</li>
+    <li>Правда ли, что для любого floating-point a верно 1 * a == a?</li>
+    <li>Правда ли, что для любого floating-point a верно 0 * a == 0?</li>
+    <li>Правда ли, что для любого floating-point a верно a - a == 0?</li></ol></p><h2>Вопрос 10</h2>
+<p>Дана программа:</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+#include &lt;cstdint&gt;
+
+int main()
+{
+   float x = 0.1;
+   uint64_t y = 100000000000. * x;
+
+   std::cout &lt;&lt; y;
+}</pre></div>
+<p>Она выводит 10000000149. Как можно объяснить такой вывод?</p><h2>Вопрос 11</h2>
+<p>Дана программа, состоящая из следующих файлов:</p><div class="codeblock"><pre>// main.cpp
+#include "f.h"
+
+int main()
+{
+    f();
+    g();
+}</pre></div>
+<div class="codeblock"><pre>// f.h
+#pragma once
+#include &lt;iostream&gt;
+
+void f()
+{
+    std::cout &lt;&lt; "hello";
+}</pre></div>
+<div class="codeblock"><pre>// g.cpp
+#include "f.h"
+
+void g()
+{
+    std::cout &lt;&lt; ' ';
+    f();
+}</pre></div>
+<p>Скомпилируется ли данная программа? Если да, то что она выведет? Если нет, то какие в ней ошибки и как их можно исправить?</p><h2>Вопрос 12</h2>
+<p>Приведите пример программы, приводящий к</p>
+
+<p><ol><li>ошибке трансляции из-за ссылки на необъявленную функцию</li>
+<li>ошибке линковки из-за ссылки на неопределенную функцию</li>
+<li>ошибке трансляции из-за двойного определения функции</li>
+<li>ошибке линковки из-за двойного определения функции</li></ol></p><h2>Вопрос 13</h2>
+<p>В чем разница между директивами препроцессора #if и #ifdef?</p><h2>Вопрос 14</h2>
+<p>Рассмотрим следующий класс mystring:</p><div class="codeblock"><pre>// mystring.h
+#pragma once
+#include &lt;cstdlib&gt;
+#include &lt;cstring&gt;
+
+struct mystring
+{
+    mystring(char const* text);
+    mystring(mystring const&amp; other);
+
+    mystring&amp; operator=(mystring const&amp; rhs);
+
+    ~mystring();
+
+private:
+    char* data_;
+    size_t size_;
+    size_t capacity_;
+};</pre></div>
+<div class="codeblock"><pre>// mystring.cpp
+#include "mystring.h"
+
+mystring::mystring(char const* text)
+    : size_(strlen(text))
+    , capacity_(size_)
+{
+    data_ = static_cast&lt;char*&gt;(operator new(size_ + 1));
+    memcpy(data_, text, size_ + 1);
+}
+
+mystring::mystring(mystring const&amp; other)
+    : data_(static_cast&lt;char*&gt;(operator new(other.size_ + 1)))
+    , size_(other.size_)
+    , capacity_(other.size_)
+{
+    memcpy(data_, other.data_, other.size_ + 1);
+}
+
+mystring&amp; mystring::operator=(mystring const&amp; rhs)
+{
+    data_ = static_cast&lt;char*&gt;(operator new(rhs.size_ + 1));
+    memcpy(data_, rhs.data_, rhs.size_ + 1);
+    size_ = rhs.size_;
+    capacity_ = rhs.size_;
+    return *this;
+}
+
+mystring::~mystring()
+{
+    operator delete(data_);
+}</pre></div>
+<p>Почему конструктор копирования и оператор присваивания, генерируемые автоматически, не подошли бы для данного класса? Корректно ли они реализованы в приведённом примере? Если нет — напишите исправленную версию.</p><h2>Вопрос 15</h2>
+<p>В чём разница между парами malloc/free, new T/delete p, operator new/operator delete?</p><h2>Вопрос 16</h2>
+<p>Корректная ли это программа? Если корректная, то, что она выводит? Если некорректная, то, в чём заключается ошибка?</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    base()
+    {
+        f();
+    }
+    
+    void f()
+    {
+        g();
+    }
+    
+    virtual void g() = 0;
+};
+
+struct derived : base
+{
+    void g()
+    {
+        std::cout &lt;&lt; "hello\n";
+    }
+};
+
+int main()
+{
+    derived d;
+}</pre></div>
+<p>Почему программа выше и программа ниже ведут себя по-разному?</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    base()
+    {
+        g();
+    }
+    
+    virtual void g() = 0;
+};
+
+struct derived : base
+{
+    void g()
+    {
+        std::cout &lt;&lt; "hello\n";
+    }
+};
+
+int main()
+{
+    derived d;
+}</pre></div>
+<h2>Вопрос 17</h2>
+<div class="codeblock"><pre>struct base
+{
+    virtual ~base();
+};
+
+struct derived : virtual base
+{};
+
+void foo(base* b)
+{
+    static_cast&lt;derived*&gt;(b); // (1)
+    dynamic_cast&lt;derived*&gt;(b); // (2)
+}</pre></div>
+<p>Компилируются ли (1) и (2)? Почему?</p><h2>Вопрос 18</h2>
+<p>Корректная ли это программа? Если да, то что она выведет? Если нет, то в чём заключается ошибка и как её можно исправить?</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    virtual void hello();
+};
+
+struct derived : base
+{
+    void hello() override;
+};
+
+void base::hello()
+{
+    std::cout &lt;&lt; "base\n";
+}
+
+void derived::hello()
+{
+   std::cout &lt;&lt; "derived\n";
+}
+
+int main()
+{
+    base* b = new derived();
+    b-&gt;hello();
+    delete b;
+}</pre></div>
+<h2>Вопрос 19</h2>
+<p><ol><li>Можно ли бросать исключения из деструктора? Если да, приведите пример.</li>
+<li>Можно ли бросать исключения из конструктора? Если да, приведите пример.</li></ol></p><h2>Вопрос 20</h2>
+<p>Почему такая реализации оператора присваивания у класса mystring является ошибочной?</p><div class="codeblock"><pre>mystring&amp; mystring::operator=(mystring const&amp; rhs)
+{
+    operator delete(data_);
+    size_ = rhs.size_;
+    capacity_ = size_;
+    data_ = static_cast&lt;char*&gt;(operator new(rhs.size_ + 1));
+    memcpy(data_, rhs.data_, rhs.size_ + 1);
+    return *this;
+}</pre></div>
+<h2>Вопрос 21</h2>
+<p>Напишите функцию <span class="codein">void insert_strong(std::vector&lt;T&gt;&amp; v, typename std::vector&lt;T&gt;::const_iterator pos, typename std::vector&lt;T&gt;::value_type val)</span>, которая вставляет элемент val в позицию pos в вектор v и удовлетворяет строгой гарантии безопасности исключений.</p><h2>Вопрос 22</h2>
+<p>Что такое copy-on-write оптимизация? Приведите примеры. В каких случаях она даёт выигрыш? В каких случаях она даёт проигрыш?</p><h2>Вопрос 23</h2>
+<p>Напишите шаблонный класс (и, если нужно, специализации к нему), который позволяет получить тип элемента у многомерного массива. В случае если передан не массив верните тип без изменения. То есть:</p><div class="codeblock"><pre>element_type&lt;int [10]&gt;::type == int
+element_type&lt;float [5][6]&gt;::type == float
+element_type&lt;double [5][6][7]&gt;::type == double
+element_type&lt;int* [5]&gt;::type == int*
+element_type&lt;int&gt;::type == int
+element_type&lt;int*&gt;::type == int*</pre></div>
+<h2>Вопрос 24</h2>
+<p>Пусть необходимо реализовать функцию void f(T* data, size_t size) двумя способами в зависимости от того, является ли тип T знаковым или беззнаковым выбираемый во время компиляции программы.</p>
+
+<p>Напишите реализацию такой функции используя
+<ol><li>SFINAE</li>
+<li>tag-dispathing</li></ol></p><h2>Вопрос 25</h2>
+<p>Пусть необходимо реализовать класс mytype&lt;T&gt; двумя способами в зависимости от того, является ли тип T знаковым или беззнаковым выбираемый во время компиляции программы.</p>
+
+<p>Напишите реализацию такого класса используя SFINAE.</p><h2>Вопрос 26</h2>
+<p>Что такое анонимные неймпейсы? Для чего они нужны? Можно ли их писать в хедер файлах?</p>  </body>
+</html>

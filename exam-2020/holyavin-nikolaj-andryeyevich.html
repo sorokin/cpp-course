@@ -1,0 +1,303 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Холявин Николай Андреевич, Экзамен C++, 8 июля 2020</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+    .codeblock
+    {
+      background: #e0e0e0;
+      border: solid 1px black;
+      padding: 5px;
+      font-family: monospace;
+    }
+    .codein
+    {
+      font-family: monospace;
+    }
+    pre { margin: 0; }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    ol li { list-style-type: lower-russian; }
+    p {font-family:sans-serif; font-size: 12pt;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+<h2>Холявин Николай Андреевич</h2>
+<h2>Вопрос 1</h2>
+<p>Какие значения получат регистры <span class="codein">bl</span>, <span class="codein">cl</span> после исполнения функции <span class="codein">foo</span>?</p>
+<div class="codeblock"><pre>somevar:    dw 0
+
+foo:
+            mov ax, 0x1234
+            mov [somevar], ax
+            
+            mov bl, [somevar]
+            mov cl, [somevar + 1]
+
+            ret</pre></div>
+<h2>Вопрос 2</h2>
+<p>Вам дана документация к инструкции <span class="codein">neg</span>: <a href="https://www.felixcloutier.com/x86/neg">https://www.felixcloutier.com/x86/neg</a>. Что нужно написать на месте ???, чтобы переход на метку <span class="codein">was_zero</span> осуществлялся, когда <span class="codein">rax == 0</span>?</p><div class="codeblock"><pre>            neg		rax
+            j???	was_zero</pre></div>
+<h2>Вопрос 3</h2>
+<p>Напишите (на ассемблере) функцию вычисляющую <span class="codein">N</span>'ое число фибоначчи (mod 2<sup>64</sup>). <span class="codein">fib(0) = 0</span>, <span class="codein">fib(1) = 1</span>, <span class="codein">fib(n) = fib(n - 1) + fib(n - 2)</span>. Считайте, что при входе <span class="codein">N</span> записано в регистре <span class="codein">rdi</span>. При выходе ответ должен быть записан в <span class="codein">rax</span>.</p><h2>Вопрос 4</h2>
+<p>Пусть у нас есть функция <span class="codein">void foo(int, void*)</span>. Какой код необходимо сгенерить компилятору, чтобы вызвать эту функцию <span class="codein">f(42, nullptr)</span>, предполагая что программа компилируется под 64-битный Linux?</p><h2>Вопрос 5</h2>
+<p>Рассмотрим такой код:</p><div class="codeblock"><pre>int g(int a, int b);
+
+int f(int a)
+{
+   return g(42, a);
+}</pre></div>
+<p>Можно было бы предположить, что для <span class="codein">f</span> будет сгенерён следующий код:</p>
+<div class="codeblock"><pre>f:
+           mov		esi, edi
+           mov		edi, 42
+           call	g
+           ret</pre></div>
+<p>Однако компиляторы заменяют <span class="codein">call</span>/<span class="codein">ret</span>, на один <span class="codein">jmp</span>:</p><div class="codeblock"><pre>f:
+           mov		esi, edi
+           mov		edi, 42
+           jmp		g</pre></div>
+<p>Такая оптимизация называется <i>sibling call optimization</i>. Каким свойствам должны удовлетворять функции <span class="codein">f</span> и <span class="codein">g</span>, чтобы такая оптимизация была возможна? Предполагайте что программа скомпилирована для Linux 64-bit.</p><h2>Вопрос 6</h2>
+<p>Есть ли какое-то объяснение почему в 32-битном режиме huge pages имеют размер 4 МБ, а в 64-битном — 2 МБ и 1 ГБ?</p><h2>Вопрос 7</h2>
+<p>Предполагая что программа скомпилирована для Linux 64-bit, чему равны <span class="codein">sizeof</span> и <span class="codein">alignof</span> следующих структур? Объясните почему.</p><div class="codeblock"><pre>struct s1
+{
+    int a;
+    int b;
+};
+
+struct s2
+{
+    char a;
+    int b;
+};
+
+struct s3
+{
+    int a;
+    char b;
+};
+
+struct s4
+{
+    char a;
+    int b;
+    char c;
+};
+
+struct s5
+{};
+
+struct s6
+{
+    s5 x, y, z;
+};
+
+struct s7 : s5
+{};
+
+struct s8 : s5, s7
+{};
+
+struct t10
+{
+    virtual void foo();
+};
+
+struct t11 : t10
+{
+    virtual void bar();
+};
+
+struct t12 : virtual t10
+{};</pre></div>
+<h2>Вопрос 8</h2>
+<p><ol><li>Чему равен минимальный <span class="codein">float</span> строго больший <span class="codein">1.f</span>?</li>
+<li>Чему равен минимальный <span class="codein">float</span> строго больший <span class="codein">2.f</span>?</li></ol></p>
+<h2>Вопрос 9</h2>
+<p>Правда ли, что для floating-point чисел a != b влечёт (a - b) != 0?</p><h2>Вопрос 10</h2>
+<p>Дана программа:</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+#include &lt;cstdint&gt;
+
+int main()
+{
+   float x = 0.1;
+   uint64_t y = 100000000000. * x;
+
+   std::cout &lt;&lt; y;
+}</pre></div>
+<p>Она выводит 10000000149. Как можно объяснить такой вывод?</p><h2>Вопрос 11</h2>
+<p>Дана программа, состоящая из следующих файлов:</p><div class="codeblock"><pre>// main.cpp
+#include "f.h"
+
+int main()
+{
+    f();
+    g();
+}</pre></div>
+<div class="codeblock"><pre>// f.h
+#pragma once
+#include &lt;iostream&gt;
+
+void f()
+{
+    std::cout &lt;&lt; "hello";
+}</pre></div>
+<div class="codeblock"><pre>// g.cpp
+#include "f.h"
+
+void g()
+{
+    std::cout &lt;&lt; ' ';
+    f();
+}</pre></div>
+<p>Скомпилируется ли данная программа? Если да, то что она выведет? Если нет, то какие в ней ошибки и как их можно исправить?</p><h2>Вопрос 12</h2>
+<p>Пусть есть следующий заголовочный файл:</p><div class="codeblock"><pre>// sum.h
+static int sum(int a, int b)
+{
+    return a + b;
+}</pre></div>
+<p>Какие вы видите ошибки в этом файле? Как их можно исправить?</p><h2>Вопрос 13</h2>
+<p>Приведите пример программы, приводящий к ошибке на этапе препроцесcирования.</p><h2>Вопрос 14</h2>
+<p>Будем считать, что правильный оператор [], это такой, который ведет себя как [] у массива. Объясните почему такие операторы [] у mystring неправильные:</p><p><ol><li><span class="codein">char operator[](size_t i);</span> (одной перегрузкой)</li>
+<li><span class="codein">char&amp; operator[](size_t i) const;</span> (одной перегрузкой)</li></ol></p><p>Напишите правильный набор перегрузок для оператор [] у класса mystring.</p><h2>Вопрос 15</h2>
+<p>В чём разница между парами malloc/free, new T/delete p, operator new/operator delete?</p><h2>Вопрос 16</h2>
+<p>Рассмотрим следующую программу:</p><div class="codeblock"><pre>struct base
+{
+protected:
+    int x;
+};
+
+struct derived : base
+{
+    void foo(base&amp; a, derived&amp; b)
+    {
+        x; // 1
+        a.x; // 2
+        b.x; // 3
+    }
+};</pre></div>
+<p>Какие из трех обращений разрешены, а какие нет? Исходя из этого сформулируйте правило, что означает модификатор доступа protected. Почему было бы плохо, если бы правила языка были сформулированны так, что все три обращения (1, 2, 3) были разрешены?</p><h2>Вопрос 17</h2>
+<p>Может ли деструктор быть абстрактным? Если да, приведите пример программы, в которой содержится и используется абстрактный деструктор.</p><h2>Вопрос 18</h2>
+<div class="codeblock"><pre>struct base
+{
+    virtual ~base();
+};
+
+struct derived : virtual base
+{};
+
+void foo(base* b)
+{
+    static_cast&lt;derived*&gt;(b); // (1)
+    dynamic_cast&lt;derived*&gt;(b); // (2)
+}</pre></div>
+<p>Компилируются ли (1) и (2)? Почему?</p><h2>Вопрос 19</h2>
+<div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    virtual char const* msg() const
+    {
+        return "base";
+    }
+};
+
+struct derived : base
+{
+    char const* msg() const override
+    {
+        return "derived";
+    }
+};
+
+void f()
+{
+    throw derived();
+}
+
+int main()
+{
+    try
+    {
+        f();
+    }
+    catch (base b)
+    {
+        std::cout &lt;&lt; b.msg();
+    }
+}</pre></div>
+<p>Что выводит данная программа? Почему? Как нужно её исправить, чтобы выводилось "derived"?</p><h2>Вопрос 20</h2>
+<div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    virtual char const* msg() const
+    {
+        return "base";
+    }
+};
+
+struct derived : base
+{
+    char const* msg() const
+    {
+        return "derived";
+    }
+};
+
+void f()
+{
+    throw derived();
+}
+
+void g()
+{
+    try
+    {
+        f();
+    }
+    catch (base const&amp; b)
+    {
+        std::cout &lt;&lt; b.msg() &lt;&lt; '\n';
+        throw b;
+    }
+}
+
+int main()
+{
+    try
+    {
+        g();
+    }
+    catch (base const&amp; b)
+    {
+        std::cout &lt;&lt; b.msg();
+    }
+}
+</pre></div>
+<p>Что выводит данная программа? Почему? Как нужно её исправить, чтобы выводилось "derived\nderived"?</p><h2>Вопрос 21</h2>
+<p>Напишите функцию <span class="codein">void insert_strong(std::vector&lt;T&gt;&amp; v, typename std::vector&lt;T&gt;::const_iterator pos, typename std::vector&lt;T&gt;::value_type val)</span>, которая вставляет элемент val в позицию pos в вектор v и удовлетворяет строгой гарантии безопасности исключений.</p><h2>Вопрос 22</h2>
+<p>Что такое copy-on-write оптимизация? Приведите примеры. В каких случаях она даёт выигрыш? В каких случаях она даёт проигрыш?</p><h2>Вопрос 23</h2>
+<p>Напишите шаблонный класс (и, если нужно, специализации к нему), который позволяет сравнить два типа на совпадение. То есть:</p><div class="codeblock"><pre>is_same&lt;int, int&gt;::value == true
+is_same&lt;int, float&gt;::value == false
+is_same&lt;char*, mytype&gt;::value == false
+is_same&lt;char, char const&gt;::value == false
+is_same&lt;vector&lt;int&gt;*, vector&lt;int&gt;*&gt;::value == true</pre></div>
+<h2>Вопрос 24</h2>
+<p>Пусть необходимо реализовать класс mytype&lt;T&gt; двумя способами в зависимости от того, является ли тип T знаковым или беззнаковым выбираемый во время компиляции программы.</p>
+
+<p>Напишите реализацию такого класса используя SFINAE.</p><h2>Вопрос 25</h2>
+<p>Что такое two-phase name lookup? Прведите пример программы, коротая либо компилируется либо нет в зависимости от того поддерживает компилятор two-phase name lookup или нет.</p><h2>Вопрос 26</h2>
+<p>Что такое анонимные неймпейсы? Для чего они нужны? Можно ли их писать в хедер файлах?</p>  </body>
+</html>

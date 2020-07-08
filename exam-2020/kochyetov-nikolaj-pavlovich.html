@@ -1,0 +1,535 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Кочетов Николай Павлович, Экзамен C++, 8 июля 2020</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+    .codeblock
+    {
+      background: #e0e0e0;
+      border: solid 1px black;
+      padding: 5px;
+      font-family: monospace;
+    }
+    .codein
+    {
+      font-family: monospace;
+    }
+    pre { margin: 0; }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    ol li { list-style-type: lower-russian; }
+    p {font-family:sans-serif; font-size: 12pt;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 12pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+<h2>Кочетов Николай Павлович</h2>
+<h2>Вопрос 1</h2>
+<p>Пусть регистр <span class="codein">rax</span> содержит значение 4666930753532704082 (0x40c444cb3ba9b552 в шестнадцатеричной записи). Какие в этом случае значения содержат регистры <span class="codein">eax</span>, <span class="codein">ax</span>, <span class="codein">al</span>, <span class="codein">ah</span>?</p><h2>Вопрос 2</h2>
+<p>Какие значения получат регистры <span class="codein">bl</span>, <span class="codein">cl</span> после исполнения функции <span class="codein">foo</span>?</p>
+<div class="codeblock"><pre>somevar:    dw 0
+
+foo:
+            mov ax, 0x1234
+            mov [somevar], ax
+            
+            mov bl, [somevar]
+            mov cl, [somevar + 1]
+
+            ret</pre></div>
+<h2>Вопрос 3</h2>
+<p>Даны три инструкции:</p><div class="codeblock"><pre>            lea     rdi, [rdi + 8]
+            mov     rdi, [rdi + 8]
+            add     rdi, 8</pre></div>
+<p>Опишите, что делает каждая из них. Чем поведение <span class="codein">lea</span> отличается от <span class="codein">mov</span>? Чем поведение <span class="codein">lea</span> отличается от <span class="codein">add</span>.</p>
+<h2>Вопрос 4</h2>
+<p>Пусть у нас есть функция <span class="codein">void foo(int, void*)</span>. Какой код необходимо сгенерить компилятору, чтобы вызвать эту функцию <span class="codein">f(42, nullptr)</span>, предполагая что программа компилируется под 64-битный Linux?</p><h2>Вопрос 5</h2>
+<p>Рассмотрим такой код:</p><div class="codeblock"><pre>int g(int a, int b);
+
+int f(int a)
+{
+   return g(42, a);
+}</pre></div>
+<p>Можно было бы предположить, что для <span class="codein">f</span> будет сгенерён следующий код:</p>
+<div class="codeblock"><pre>f:
+           mov		esi, edi
+           mov		edi, 42
+           call	g
+           ret</pre></div>
+<p>Однако компиляторы заменяют <span class="codein">call</span>/<span class="codein">ret</span>, на один <span class="codein">jmp</span>:</p><div class="codeblock"><pre>f:
+           mov		esi, edi
+           mov		edi, 42
+           jmp		g</pre></div>
+<p>Такая оптимизация называется <i>sibling call optimization</i>. Каким свойствам должны удовлетворять функции <span class="codein">f</span> и <span class="codein">g</span>, чтобы такая оптимизация была возможна? Предполагайте что программа скомпилирована для Linux 64-bit.</p><h2>Вопрос 6</h2>
+<p>Зачем нужна страничная адресация?</p><h2>Вопрос 7</h2>
+<p>Предполагая что программа скомпилирована для Linux 64-bit, чему равны <span class="codein">sizeof</span> и <span class="codein">alignof</span> следующих структур? Объясните почему.</p><div class="codeblock"><pre>struct s1
+{
+    int a;
+    int b;
+};
+
+struct s2
+{
+    char a;
+    int b;
+};
+
+struct s3
+{
+    int a;
+    char b;
+};
+
+struct s4
+{
+    char a;
+    int b;
+    char c;
+};
+
+struct s5
+{};
+
+struct s6
+{
+    s5 x, y, z;
+};
+
+struct s7 : s5
+{};
+
+struct s8 : s5, s7
+{};
+
+struct t10
+{
+    virtual void foo();
+};
+
+struct t11 : t10
+{
+    virtual void bar();
+};
+
+struct t12 : virtual t10
+{};</pre></div>
+<h2>Вопрос 8</h2>
+<p>Пусть есть две программы:</p><div class="codeblock"><pre>// 1
+void f(int) {}
+void f(signed int) {}
+void f(unsigned int) {}</pre></div>
+<div class="codeblock"><pre>// 2
+void f(char) {}
+void f(signed char) {}
+void f(unsigned char) {}</pre></div>
+<p>Компилируются ли они или нет? Если нет, то почему?</p><h2>Вопрос 9</h2>
+<p>Правда ли, что для floating-point чисел a != b влечёт (a - b) != 0?</p><h2>Вопрос 10</h2>
+<p>(если в этом задании отвечаете нет, приведите контрпример)
+    
+    <ol><li>Правда ли, что для любых floating-point a и b верно a + b == b + a?</li>
+    <li>Правда ли, что для любых floating-point a, b и c верно a + (b + c) == (a + b) + c?</li>
+    <li>Правда ли, что для любого floating-point a верно 1 * a == a?</li>
+    <li>Правда ли, что для любого floating-point a верно 0 * a == 0?</li>
+    <li>Правда ли, что для любого floating-point a верно a - a == 0?</li></ol></p><h2>Вопрос 11</h2>
+<p>Пусть есть следующий заголовочный файл:</p><div class="codeblock"><pre>// sum.h
+static int sum(int a, int b)
+{
+    return a + b;
+}</pre></div>
+<p>Какие вы видите ошибки в этом файле? Как их можно исправить?</p><h2>Вопрос 12</h2>
+<p>Приведите пример программы, приводящий к</p>
+
+<p><ol><li>ошибке трансляции из-за ссылки на необъявленную функцию</li>
+<li>ошибке линковки из-за ссылки на неопределенную функцию</li>
+<li>ошибке трансляции из-за двойного определения функции</li>
+<li>ошибке линковки из-за двойного определения функции</li></ol></p><h2>Вопрос 13</h2>
+<p>В чем разница между директивами препроцессора #if и #ifdef?</p><h2>Вопрос 14</h2>
+<p>Рассмотрим следующий класс mystring:</p><div class="codeblock"><pre>// mystring.h
+#pragma once
+#include &lt;cstdlib&gt;
+#include &lt;cstring&gt;
+
+struct mystring
+{
+    mystring(char const* text);
+    mystring(mystring const&amp; other);
+
+    mystring&amp; operator=(mystring const&amp; rhs);
+
+    ~mystring();
+
+private:
+    char* data_;
+    size_t size_;
+    size_t capacity_;
+};</pre></div>
+<div class="codeblock"><pre>// mystring.cpp
+#include "mystring.h"
+
+mystring::mystring(char const* text)
+    : size_(strlen(text))
+    , capacity_(size_)
+{
+    data_ = static_cast&lt;char*&gt;(operator new(size_ + 1));
+    memcpy(data_, text, size_ + 1);
+}
+
+mystring::mystring(mystring const&amp; other)
+    : data_(static_cast&lt;char*&gt;(operator new(other.size_ + 1)))
+    , size_(other.size_)
+    , capacity_(other.size_)
+{
+    memcpy(data_, other.data_, other.size_ + 1);
+}
+
+mystring&amp; mystring::operator=(mystring const&amp; rhs)
+{
+    data_ = static_cast&lt;char*&gt;(operator new(rhs.size_ + 1));
+    memcpy(data_, rhs.data_, rhs.size_ + 1);
+    size_ = rhs.size_;
+    capacity_ = rhs.size_;
+    return *this;
+}
+
+mystring::~mystring()
+{
+    operator delete(data_);
+}</pre></div>
+<p>Почему конструктор копирования и оператор присваивания, генерируемые автоматически, не подошли бы для данного класса? Корректно ли они реализованы в приведённом примере? Если нет — напишите исправленную версию.</p><h2>Вопрос 15</h2>
+<p>В чём разница между парами malloc/free, new T/delete p, operator new/operator delete?</p><h2>Вопрос 16</h2>
+<p>Пусть есть следующая программа:</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+   virtual void foo();
+};
+
+struct derived : base
+{
+   void foo() override;
+};
+
+void derived::foo()
+{
+   std::cout &lt;&lt; "derived::foo\n";
+   // call foo() in base
+}</pre></div>
+<p>Что нужно написать на месте комментария, чтобы вызвать foo() из базового класса?</p><h2>Вопрос 17</h2>
+<div class="codeblock"><pre>struct base
+{
+    virtual ~base();
+};
+
+struct derived : virtual base
+{};
+
+void foo(base* b)
+{
+    static_cast&lt;derived*&gt;(b); // (1)
+    dynamic_cast&lt;derived*&gt;(b); // (2)
+}</pre></div>
+<p>Компилируются ли (1) и (2)? Почему?</p><h2>Вопрос 18</h2>
+<p>Корректная ли это программа? Если да, то что она выведет? Если нет, то в чём заключается ошибка и как её можно исправить?</p><div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    virtual void hello();
+};
+
+struct derived : base
+{
+    void hello() override;
+};
+
+void base::hello()
+{
+    std::cout &lt;&lt; "base\n";
+}
+
+void derived::hello()
+{
+   std::cout &lt;&lt; "derived\n";
+}
+
+int main()
+{
+    base* b = new derived();
+    b-&gt;hello();
+    delete b;
+}</pre></div>
+<h2>Вопрос 19</h2>
+<div class="codeblock"><pre>#include &lt;iostream&gt;
+
+struct base
+{
+    virtual char const* msg() const
+    {
+        return "base";
+    }
+};
+
+struct derived : base
+{
+    char const* msg() const override
+    {
+        return "derived";
+    }
+};
+
+void f()
+{
+    throw derived();
+}
+
+int main()
+{
+    try
+    {
+        f();
+    }
+    catch (base b)
+    {
+        std::cout &lt;&lt; b.msg();
+    }
+}</pre></div>
+<p>Что выводит данная программа? Почему? Как нужно её исправить, чтобы выводилось "derived"?</p><h2>Вопрос 20</h2>
+<p><ol><li>Можно ли бросать исключения из деструктора? Если да, приведите пример.</li>
+<li>Можно ли бросать исключения из конструктора? Если да, приведите пример.</li></ol></p><h2>Вопрос 21</h2>
+<p>Пусть есть следующий пример кода использующий библиотеку ffmpeg:</p><div class="codeblock"><pre>// encoding_context.h
+#pragma once
+
+#include &lt;cstdint&gt;
+#include &lt;cstddef&gt;
+#include &lt;cstdio&gt;
+
+struct AVCodec;
+struct AVCodecContext;
+struct AVFrame;
+struct AVPacket;
+struct SwsContext;
+
+struct encoding_context
+{
+    encoding_context(char const* filename,
+                     size_t width,
+                     size_t height,
+                     int64_t bit_rate = 400000,
+                     int frame_rate = 25);
+
+    ~encoding_context();
+
+    size_t width() const;
+    size_t height() const;
+
+    void encode_frame(uint8_t const* rgb_buf, ptrdiff_t linesize);
+
+    void flush();
+
+private:
+    void write_packets();
+
+private:
+    const AVCodec* codec;
+    AVCodecContext* ctx = nullptr;
+    AVFrame* frame;
+    AVPacket* pkt;
+    FILE* outfile;
+    int next_frame_pts = 0;
+    SwsContext* sws_ctx;
+};</pre></div>
+<div class="codeblock"><pre>// encoding_context.cpp
+#include "encoding_context.h"
+#include &lt;cassert&gt;
+#include &lt;stdexcept&gt;
+#include &lt;sstream&gt;
+
+extern "C"
+{
+#include &lt;libavcodec/avcodec.h&gt;
+#include &lt;libavutil/opt.h&gt;
+#include &lt;libswscale/swscale.h&gt;
+}
+
+namespace
+{
+    std::string av_error_string(int errnum)
+    {
+        char buf[AV_ERROR_MAX_STRING_SIZE];
+        av_strerror(errnum, buf, AV_ERROR_MAX_STRING_SIZE);
+        return buf;
+    }
+}
+
+encoding_context::encoding_context(
+    char const* filename,
+    size_t width,
+    size_t height,
+    int64_t bit_rate,
+    int frame_rate)
+{
+    avcodec_register_all();
+
+    codec = avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
+    if (!codec)
+        throw std::runtime_error("codec not found");
+
+    ctx = avcodec_alloc_context3(codec);
+    if (!ctx)
+        throw std::runtime_error("Could not allocate video codec context");
+
+    /* put sample parameters */
+    ctx-&gt;bit_rate = bit_rate;
+
+    /* resolution must be a multiple of two */
+    ctx-&gt;width = width;
+    ctx-&gt;height = height;
+    /* frames per second */
+    ctx-&gt;time_base = {1, frame_rate};
+    ctx-&gt;framerate = {frame_rate, 1};
+
+    /* emit one intra frame every ten frames
+     * check frame pict_type before passing frame
+     * to encoder, if frame-&gt;pict_type is AV_PICTURE_TYPE_I
+     * then gop_size is ignored and the output of encoder
+     * will always be I frame irrespective to gop_size
+     */
+    ctx-&gt;gop_size = 10;
+    ctx-&gt;max_b_frames = 1;
+    ctx-&gt;pix_fmt = AV_PIX_FMT_YUV420P;
+
+    if (codec-&gt;id == AV_CODEC_ID_H264)
+        av_opt_set(ctx-&gt;priv_data, "preset", "slow", 0);
+
+    /* open it */
+    int ret = avcodec_open2(ctx, codec, nullptr);
+    if (ret &lt; 0)
+    {
+        std::stringstream ss;
+        ss &lt;&lt; "Could not open codec: " &lt;&lt; av_error_string(ret);
+        throw std::runtime_error(ss.str());
+    }
+    
+    pkt = av_packet_alloc();
+    if (!pkt)
+        throw std::runtime_error("could not allocate packet");
+
+    outfile = fopen(filename, "wb");
+    if (!outfile)
+    {
+        std::stringstream ss;
+        ss &lt;&lt; "Could not open " &lt;&lt; filename;
+        throw std::runtime_error(ss.str());
+    }
+
+    frame = av_frame_alloc();
+    if (!frame)
+        throw std::runtime_error("Could not allocate video frame");
+
+    frame-&gt;format = ctx-&gt;pix_fmt;
+    frame-&gt;width  = ctx-&gt;width;
+    frame-&gt;height = ctx-&gt;height;
+
+    ret = av_frame_get_buffer(frame, 0);
+    if (ret &lt; 0)
+        throw std::runtime_error("Could not allocate the video frame data");
+
+    sws_ctx = sws_getContext(width, height, AV_PIX_FMT_RGB32,
+                             width, height, AV_PIX_FMT_YUV420P,
+                             0, nullptr, nullptr, nullptr);
+    if (!sws_ctx)
+        throw std::runtime_error("Could not allocate swscale context");
+}
+
+encoding_context::~encoding_context()
+{
+    sws_freeContext(sws_ctx);
+    av_frame_free(&amp;frame);
+    fclose(outfile);
+    av_packet_free(&amp;pkt);
+    avcodec_free_context(&amp;ctx);
+}
+
+size_t encoding_context::width() const
+{
+    return ctx-&gt;width;
+}
+
+size_t encoding_context::height() const
+{
+    return ctx-&gt;height;
+}
+
+void encoding_context::encode_frame(uint8_t const* rgb_buf, ptrdiff_t linesize)
+{
+    int ret = av_frame_make_writable(frame);
+    if (ret &lt; 0)
+        throw std::runtime_error("could not make frame writable");
+
+    uint8_t const* inData[1] = { rgb_buf }; // RGB24 have one plane
+    int inLinesize[1] = { static_cast&lt;int&gt;(linesize) }; // RGB stride
+    sws_scale(sws_ctx, inData, inLinesize, 0, frame-&gt;height, frame-&gt;data, frame-&gt;linesize);
+
+    frame-&gt;pts = next_frame_pts++;
+
+    ret = avcodec_send_frame(ctx, frame);
+    if (ret &lt; 0)
+        throw std::runtime_error("Error sending a frame for encoding");
+
+    write_packets();
+}
+
+void encoding_context::flush()
+{
+    int ret = avcodec_send_frame(ctx, nullptr);
+    if (ret &lt; 0)
+        throw std::runtime_error("Error sending a frame for encoding");
+
+    write_packets();
+
+    uint8_t const endcode[] = { 0, 0, 1, 0xb7 };
+
+    /* add sequence end code to have a real MPEG file */
+    if (codec-&gt;id == AV_CODEC_ID_MPEG1VIDEO || codec-&gt;id == AV_CODEC_ID_MPEG2VIDEO)
+        fwrite(endcode, 1, sizeof(endcode), outfile);
+}
+
+void encoding_context::write_packets()
+{
+    int ret = 0;
+    while (ret &gt;= 0)
+    {
+        ret = avcodec_receive_packet(ctx, pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            return;
+        else if (ret &lt; 0)
+            throw std::runtime_error("Error during encoding");
+
+        fwrite(pkt-&gt;data, 1, pkt-&gt;size, outfile);
+        av_packet_unref(pkt);
+    }
+}</pre></div>
+<p>Конструтор encoding_context содержит ошибку. Какую? Какие в видите способ исправить её? Разумеется в этом задании не продполагается знание API ffmpeg'а.</p><h2>Вопрос 22</h2>
+<p>Что такое copy-on-write оптимизация? Приведите примеры. В каких случаях она даёт выигрыш? В каких случаях она даёт проигрыш?</p><h2>Вопрос 23</h2>
+<p>Напишите шаблонный класс (и, если нужно, специализации к нему), который позволяет получить общее число элементов у многомерного массива. В случае если передан не массив верните 1. То есть:</p><div class="codeblock"><pre>array_size&lt;int [10]&gt;::value == 10
+array_size&lt;float [5][6]&gt;::value == 30
+array_size&lt;double [5][6][7]&gt;::value == 210
+array_size&lt;int* [5]&gt;::value == 5
+array_size&lt;int&gt;::value == 1
+array_size&lt;int*&gt;::value == 1</pre></div>
+<h2>Вопрос 24</h2>
+<p>Пусть необходимо реализовать класс mytype&lt;T&gt; двумя способами в зависимости от того, является ли тип T знаковым или беззнаковым выбираемый во время компиляции программы.</p>
+
+<p>Напишите реализацию такого класса используя SFINAE.</p><h2>Вопрос 25</h2>
+<p>Что такое зависимые имена? Что означает ключевое слово typename стоящее перед зависимым именем? Что означает ключевое слово template стоящее перед зависимым именем?</p><h2>Вопрос 26</h2>
+<p>Что такое анонимные неймпейсы? Для чего они нужны? Можно ли их писать в хедер файлах?</p>  </body>
+</html>
