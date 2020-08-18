@@ -29,7 +29,7 @@
 14. Понятие xvalue
     * xvalue/prvalue, продление времени жизни при бинде к rvalue-ссылке
     * copy elision
-15. rvalue references for *this
+15. rvalue references for `*this`
 16. сравнение с destructive move
 
 ## Умные указатели (1 пара)
@@ -140,6 +140,7 @@
 2. std::atomic
     * false sharing
     * relaxed atomics
+3. Многопоточность в аллокаторах памяти
 
 ## Ещё многопоточность (2 пары)
 1. Рассуждение про thread-safe signal
