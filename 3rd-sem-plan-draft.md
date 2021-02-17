@@ -8,6 +8,7 @@
     * Вопрос владения
 3. Multi-index контейнеры
 4. `linked_ptr`
+5. `intrusive_ptr`
 
 ## Rvalue-references (2 пары)
 1. Передача структур в функцию по значению
